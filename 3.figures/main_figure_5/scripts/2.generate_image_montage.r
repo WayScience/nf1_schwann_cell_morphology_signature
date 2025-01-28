@@ -105,49 +105,31 @@ list_of_images <- list(
     min_corr_feat6_image
 )
 
-# width <- 2.5
-# height <- 2.5
+width <- 2.5
+height <- 2.5
 
-# text_size <- 10
-
-# options(repr.plot.width = width, repr.plot.height = height)
-
-# # blank
-# blank <- (
-#     ggplot()
-#     + geom_text(aes(x = 0.5, y = 0.5, label = ""), size = text_size) 
-#     + theme_void()
-# )
-
-# # ggplot of just text for labelling min versus max cells for only the top Null features (Null is always the max and WT is the min)
-# WT_min_text <- (
-#     ggplot()
-#     + geom_text(aes(x = 0.5, y = 0.5, label = "Minimum values\n(WT cells)"), size = text_size, angle = 90) 
-#     + theme_void()
-# )
-# Null_max_text <- (
-#     ggplot()
-#     + geom_text(aes(x = 0.5, y = 0.5, label = "Maximum values\n(Null cells)"), size = text_size, angle = 90) 
-#     + theme_void()
-# )
-
-# # ggplot of just text for labelling min versus max cells for only the top WT feature (WT is always the max and Null is the min)
-# WT_max_text <- (
-#     ggplot()
-#     + geom_text(aes(x = 0.5, y = 0.5, label = "Maximum values\n(WT cells)"), size = text_size, angle = 90) 
-#     + theme_void()
-# )
-# Null_min_text <- (
-#     ggplot()
-#     + geom_text(aes(x = 0.5, y = 0.5, label = "Minimum values\n(Null cells)"), size = text_size, angle = 90) 
-#     + theme_void()
-# )
-
-# patchwork the cropped single-cell images together
-width <- 17
-height <- 8
+text_size <- 10
 
 options(repr.plot.width = width, repr.plot.height = height)
+
+# blank
+blank <- (
+    ggplot()
+    + geom_text(aes(x = 0.5, y = 0.5, label = ""), size = text_size) 
+    + theme_void()
+)
+
+# ggplot of just text for labelling y axis
+WT_text <- (
+    ggplot()
+    + geom_text(aes(x = 0.5, y = 0.5, label = "WT (NF1 +/+) genotype\nrepresentative single cells"), size = text_size, angle = 90) 
+    + theme_void()
+)
+Null_text <- (
+    ggplot()
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Null (NF1 -/-) genotype\nrepresentative single cells"), size = text_size, angle = 90) 
+    + theme_void()
+)
 
 # stich the images together for each top feature
 ## top features for Null cells
@@ -210,42 +192,24 @@ text_size <- 10
 options(repr.plot.width = width, repr.plot.height = height)
 
 # ggplot of just text
-radial_feat_text_max <- (
+radial_feat_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "F-actin cytoskeleton:\nNull (NF1 -/-) single-cells with highest values"), size = text_size) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Top Null (NF1 -/-) predicting feature:\nF-actin cytoskeleton"), size = text_size) 
     + theme_void()
 )
-radial_feat_text_min <- (
+corr_feat_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "F-actin cytoskeleton:\nWT (NF1 +/+) single-cells with lowest values"), size = text_size) 
-    + theme_void()
-)
-corr_feat_text_max <- (
-    ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "ER in the nucleus:\nWT (NF1 +/+) single-cells with highest values"), size = text_size) 
-    + theme_void()
-)
-corr_feat_text_min <- (
-    ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "ER in the nucleus:\nNull (NF1 -/-) single-cells with lowest values"), size = text_size) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Top WT (NF1 +/+) predicting feature:\nER in the nucleus"), size = text_size) 
     + theme_void()
 )
 
 # patch feature texts together
-radial_patch_text_max <- (
-    radial_feat_text_max
+radial_patch_text <- (
+    radial_feat_text
     + plot_layout(nrow = 1)
 )
-radial_patch_text_min <- (
-    radial_feat_text_min
-    + plot_layout(nrow = 1)
-)
-corr_patch_text_max <- (
-    corr_feat_text_max
-    + plot_layout(nrow = 1)
-)
-corr_patch_text_min <- (
-    corr_feat_text_min
+corr_patch_text <- (
+    corr_feat_text
     + plot_layout(nrow = 1)
 )
 
@@ -254,22 +218,25 @@ height <- 2.5
 
 options(repr.plot.width = width, repr.plot.height = height)
 
-radial_patch_text_max
+radial_patch_text
 
 
 # Create montage
-width <- 14.5
+width <- 15.5
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
 
-# patch the images together
 radial_feat_plot_max <- (
-    wrap_elements(full = radial_patch_text_max)
-    + wrap_elements(max_radial_feat_images_1)
-    + wrap_elements(max_radial_feat_images_2)
-    + plot_layout(ncol = 1, heights = c(0.3, 1, 1))
-    )
+  Null_text + 
+  (
+    wrap_elements(full = radial_patch_text) + 
+    wrap_elements(max_radial_feat_images_1) + 
+    wrap_elements(max_radial_feat_images_2) + 
+    plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+  ) +
+  plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
+)
 
 radial_feat_plot_max
 
@@ -284,18 +251,22 @@ ggsave(
 )
 
 # Create montage
-width <- 14.5
+width <- 15.5
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
 
 # patch the images together
 radial_feat_plot_min <- (
-    wrap_elements(full = radial_patch_text_min)
-    + wrap_elements(min_radial_feat_images_1)
-    + wrap_elements(min_radial_feat_images_2)
-    + plot_layout(ncol = 1, heights = c(0.3, 1, 1))
-    )
+    WT_text + 
+    (
+        wrap_elements(full = radial_patch_text) + 
+        wrap_elements(min_radial_feat_images_1) + 
+        wrap_elements(min_radial_feat_images_2) + 
+        plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+    ) +
+    plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
+)
 
 radial_feat_plot_min
 
@@ -310,18 +281,22 @@ ggsave(
 )
 
 # Create montage
-width <- 14.5
+width <- 15.5
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
 
 # patch the images together
 corr_feat_plot_max <- (
-    wrap_elements(full = corr_patch_text_max)
-    + wrap_elements(max_corr_feat_images_1)
-    + wrap_elements(max_corr_feat_images_2)
-    + plot_layout(ncol = 1, heights = c(0.3, 1, 1))
-    )
+    WT_text + 
+    (
+        wrap_elements(full = corr_patch_text) + 
+        wrap_elements(max_corr_feat_images_1) + 
+        wrap_elements(max_corr_feat_images_2) + 
+        plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+    ) +
+    plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
+)
 
 corr_feat_plot_max
 
@@ -336,18 +311,22 @@ ggsave(
 )
 
 # Create montage
-width <- 14.5
+width <- 15.5
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
 
 # patch the images together
 corr_feat_plot_min <- (
-    wrap_elements(full = corr_patch_text_min)
-    + wrap_elements(min_corr_feat_images_1)
-    + wrap_elements(min_corr_feat_images_2)
-    + plot_layout(ncol = 1, heights = c(0.3, 1, 1))
-    )
+    Null_text + 
+    (
+        wrap_elements(full = corr_patch_text) + 
+        wrap_elements(min_corr_feat_images_1) + 
+        wrap_elements(min_corr_feat_images_2) + 
+        plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+    ) +
+    plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
+)
 
 corr_feat_plot_min
 

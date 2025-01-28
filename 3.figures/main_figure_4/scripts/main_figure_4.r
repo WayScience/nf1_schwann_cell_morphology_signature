@@ -4,6 +4,7 @@ suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(patchwork))
 suppressPackageStartupMessages(library(RColorBrewer))
 suppressPackageStartupMessages(library(arrow))
+suppressPackageStartupMessages(library(cowplot))
 
 figure_dir <- "../figures"
 output_main_figure_4 <- file.path(
@@ -105,18 +106,18 @@ options(repr.plot.width = width, repr.plot.height = height)
 # Create the plot with stars for Actin and RadialDistribution, and ER and Intensity in the Cytoplasm facet
 feature_importance_gg <- (
     ggplot(other_feature_group_df, aes(x = channel_cleaned, y = feature_group))
-    + geom_point(aes(fill = feature_importances), pch = 22, size = 24)
+    + geom_point(aes(fill = feature_importances), pch = 22, size = 22)
     + geom_text(aes(label = rounded_coeff), size = 6)
     + geom_point(data = red_box_radial, 
                 aes(x = channel_cleaned, y = feature_group), 
                 color = "red", 
                 shape = 0, 
-                size = 22, 
+                size = 20, 
                 stroke = 1.5) # Red box for Actin and RadialDistribution
     + facet_wrap("~compartment", ncol = 3)
     + theme_bw()
     + scale_fill_distiller(
-        name = "Top absolute value\nweight from model",
+        name = "Top abs value\ncoefficient",
         palette = "YlGn",
         direction = 1,
         limits = c(0, 2.5)
@@ -132,22 +133,28 @@ feature_importance_gg <- (
             colour = "black",
             fill = "#fdfff4"
         ),
-        legend.position = "bottom", # Move legend to bottom
+        legend.position = "none", # Move legend to bottom
         legend.title = element_text(size = 16), # Increase space between title and gradient
         legend.text = element_text(size = 14),
         legend.key.height = unit(1.25, "cm"), # Increase height of legend key
-        legend.key.width = unit(2, "cm"), # Optionally, increase width of legend key
+        legend.key.width = unit(1.5, "cm"), # Optionally, increase width of legend key
         legend.margin = margin(t = 35),
     )
 )
 
 feature_importance_gg
 
+# Extract the legend as a separate grob
+legend <- cowplot::get_legend(
+  feature_importance_gg + theme(legend.position = "right")
+)
+
+cowplot::plot_grid(legend)
+
 # Filter data to include AreaShape and Neighbors feature groups
 area_shape_neighbors_df <- feat_import_df %>%
     dplyr::filter(feature_group %in% c("AreaShape", "Neighbors", "Location")) %>%
-    dplyr::mutate(area_shape_indicator = paste(measurement, channel, parameter1, sep = "_"),
-                  measurement = ifelse(measurement == "SecondClosestDistance", "SCD", measurement))
+    dplyr::mutate(area_shape_indicator = paste(measurement, channel, parameter1, sep = "_"))
 
 # Add rounded coefficient values to the data frame
 area_shape_neighbors_df <- area_shape_neighbors_df %>%
@@ -249,13 +256,6 @@ correlation_importance_gg <- (
 
 correlation_importance_gg
 
-left_plot <- (
-    areashape_neighbors_importance_gg /
-    correlation_importance_gg
-) + plot_layout(heights = c(1,1.4))
-
-left_plot
-
 coefficient_plot <- (
     areashape_neighbors_importance_gg /
     correlation_importance_gg /
@@ -264,11 +264,17 @@ coefficient_plot <- (
 
 coefficient_plot
 
+width <- 16
+height <- 16
+
+options(repr.plot.width = width, repr.plot.height = height)
+
 fig_4_gg <- (
-  coefficient_plot
-) + plot_annotation(tag_levels = list(c("A", "B", "C"))) & theme(plot.tag = element_text(size = 25))
+    coefficient_plot | 
+    cowplot::plot_grid(legend, nrow = 1)
+) + plot_layout(widths = c(4, 1))
 
 # Save or display the plot
-ggsave(output_main_figure_4, plot = fig_4_gg, dpi = 500, height = 17, width = 16)
+ggsave(output_main_figure_4, plot = fig_4_gg, dpi = 500, height = height, width = width)
 
 fig_4_gg

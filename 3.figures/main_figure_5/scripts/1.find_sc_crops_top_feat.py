@@ -195,11 +195,11 @@ print(plate5_df.shape)
 plate5_df.head()
 
 
-# ## Load in feature importance data and determine the top two differential features for Null
+# ## Load in feature importance data and determine the top two differential features for Null and WT
 # 
-# Note: There is a higher weighted feature for WT but we decided these two features were most interesting + we decided correlation features would be not be as easy to interpret.
+# Top positive feature means the most important in predicting the WT genotype, most negative is most important in predicting Null genotype.
 
-# In[6]:
+# In[ ]:
 
 
 feat_import_df = pd.read_parquet(
@@ -208,17 +208,17 @@ feat_import_df = pd.read_parquet(
     )
 )
 
-# Find the top positive feature
+# Find the top positive feature (predicting WT)
 correlation_feature = feat_import_df.sort_values(
     by="feature_importances", ascending=False
 ).iloc[0]["feature_names"]
 
-# Find the top negative feature
+# Find the top negative feature (predicting Null)
 radial_feature = feat_import_df.loc[
     feat_import_df["feature_importances"].idxmin(), "feature_names"
 ]
 
-# Find the second top negative feature
+# Find the second top negative feature (extra)
 intensity_feature = feat_import_df.sort_values(
     by="feature_importances", ascending=True
 ).iloc[1]["feature_names"]
