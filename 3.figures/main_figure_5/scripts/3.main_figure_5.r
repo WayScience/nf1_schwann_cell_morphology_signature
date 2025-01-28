@@ -121,7 +121,7 @@ align_plot
 
 fig_5_gg <- (
   align_plot
-) + plot_annotation(tag_levels = list(c("A", "B", "", ""))) & theme(plot.tag = element_text(size = 25))
+) + plot_annotation(tag_levels = list(c("A", "B", "", ""))) & theme(plot.tag = element_text(size = 28))
 
 # Save or display the plot
-ggsave(output_main_figure_5, plot = fig_5_gg, dpi = 500, height = 14, width = 20)
+ggsave(output_main_figure_5, plot = fig_5_gg, dpi = 500, height = 14, width = 18)

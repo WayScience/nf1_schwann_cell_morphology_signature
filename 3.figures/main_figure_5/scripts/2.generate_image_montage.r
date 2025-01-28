@@ -108,7 +108,7 @@ list_of_images <- list(
 width <- 2.5
 height <- 2.5
 
-text_size <- 10
+text_size <- 13
 
 options(repr.plot.width = width, repr.plot.height = height)
 
@@ -187,19 +187,19 @@ min_corr_feat_images_2 <- (
 width <- 2.5
 height <- 2.5
 
-text_size <- 10
+text_size <- 14
 
 options(repr.plot.width = width, repr.plot.height = height)
 
 # ggplot of just text
 radial_feat_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "Top Null (NF1 -/-) predicting feature:\nF-actin cytoskeleton"), size = text_size) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Top Null (NF1 -/-) predicting feature:\nIntensity of F-actin at the edge of cytoskeleton"), size = text_size) 
     + theme_void()
 )
 corr_feat_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "Top WT (NF1 +/+) predicting feature:\nER in the nucleus"), size = text_size) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Top WT (NF1 +/+) predicting feature:\nCorrelation of ER and nucleus stains"), size = text_size) 
     + theme_void()
 )
 
@@ -222,7 +222,7 @@ radial_patch_text
 
 
 # Create montage
-width <- 15.5
+width <- 15
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
@@ -233,7 +233,7 @@ radial_feat_plot_max <- (
     wrap_elements(full = radial_patch_text) + 
     wrap_elements(max_radial_feat_images_1) + 
     wrap_elements(max_radial_feat_images_2) + 
-    plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+    plot_layout(ncol = 1, heights = c(0.35, 1, 1))
   ) +
   plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
 )
@@ -251,7 +251,7 @@ ggsave(
 )
 
 # Create montage
-width <- 15.5
+width <- 15
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
@@ -263,7 +263,7 @@ radial_feat_plot_min <- (
         wrap_elements(full = radial_patch_text) + 
         wrap_elements(min_radial_feat_images_1) + 
         wrap_elements(min_radial_feat_images_2) + 
-        plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+        plot_layout(ncol = 1, heights = c(0.35, 1, 1))
     ) +
     plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
 )
@@ -281,7 +281,7 @@ ggsave(
 )
 
 # Create montage
-width <- 15.5
+width <- 15
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
@@ -293,7 +293,7 @@ corr_feat_plot_max <- (
         wrap_elements(full = corr_patch_text) + 
         wrap_elements(max_corr_feat_images_1) + 
         wrap_elements(max_corr_feat_images_2) + 
-        plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+        plot_layout(ncol = 1, heights = c(0.35, 1, 1))
     ) +
     plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
 )
@@ -311,7 +311,7 @@ ggsave(
 )
 
 # Create montage
-width <- 15.5
+width <- 15
 height <- 11
 
 options(repr.plot.width = width, repr.plot.height = height)
@@ -323,7 +323,7 @@ corr_feat_plot_min <- (
         wrap_elements(full = corr_patch_text) + 
         wrap_elements(min_corr_feat_images_1) + 
         wrap_elements(min_corr_feat_images_2) + 
-        plot_layout(ncol = 1, heights = c(0.25, 1, 1))
+        plot_layout(ncol = 1, heights = c(0.35, 1, 1))
     ) +
     plot_layout(widths = c(0.1, 1)) # Adjusts the width of the left area for the text
 )
