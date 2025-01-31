@@ -107,7 +107,7 @@ accuracy_score_all_plates_plot <- (
     ggplot(filtered_metrics_df, aes(x = shuffled_type, y = accuracy, fill = datasplit))
     + geom_bar(stat = "identity", position = "dodge")
 
-    # Add text labels for F1 scores on top of bars
+    # Add text labels for accuracy scores on top of bars
     + geom_text(
         aes(label = sprintf("%.2f", accuracy)), 
         position = position_dodge(width = 0.9), 

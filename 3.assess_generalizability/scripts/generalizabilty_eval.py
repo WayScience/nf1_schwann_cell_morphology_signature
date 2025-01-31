@@ -21,48 +21,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-# ## Define helper functions
-
-# In[2]:
-
-
-def get_X_y_data(
-    df: pd.DataFrame, label: str, shuffle: bool = False
-) -> Tuple[pd.DataFrame, np.array]:
-    """Get X (feature space) and labels (predicting class) from pandas Data frame, including feature names.
-
-    Args:
-        df (pd.DataFrame): Data frame containing morphology.
-        label (str): Name of the Metadata column being used as the predicting class.
-        shuffle (bool, optional): Shuffle the feature columns to get a shuffled dataset. Defaults to False.
-
-    Returns:
-        Tuple[pd.DataFrame, np.array]: Returns DataFrame for the feature space (X) with feature names,
-                                       and np.array for the predicting class (y).
-    """
-    # Get the feature columns (excluding 'Metadata' columns and the label column)
-    feature_columns = [
-        col for col in df.columns if not col.startswith("Metadata") and col != label
-    ]
-
-    # Extract feature space (X) as a DataFrame (keep feature names)
-    X = df[feature_columns]
-
-    # Extract class label (y) as a NumPy array
-    y = df.loc[:, [label]].values
-    y = np.ravel(y)  # Flatten y to a 1D array
-
-    # If shuffle is True, shuffle the feature columns independently for training
-    if shuffle:
-        for column in X.T:
-            np.random.shuffle(column)
-
-    return X, y
-
-
 # ## Set paths and variables
 
-# In[ ]:
+# In[2]:
 
 
 # Path to folder holding model and encoder files
@@ -84,7 +45,7 @@ rng = np.random.default_rng(0)
 
 # ## Load in plate with two cell lines (Plate 6)
 
-# In[4]:
+# In[3]:
 
 
 # Read in data from plate 6 with two cell lines
@@ -94,8 +55,8 @@ plate6_df = pd.read_parquet(
     )
 )
 
-# Remove rows where Metadata_genotype is "HET"
-plate6_df = plate6_df[plate6_df["Metadata_genotype"] != "HET"].reset_index(drop=True)
+# # Remove rows where Metadata_genotype is "HET"
+# plate6_df = plate6_df[plate6_df["Metadata_genotype"] != "HET"].reset_index(drop=True)
 
 # Count rows before dropping NaNs
 initial_count = plate6_df.shape[0]
@@ -116,7 +77,7 @@ plate6_df.head()
 
 # ## Generate a shuffled dataset from the loaded in plate
 
-# In[5]:
+# In[4]:
 
 
 # Shuffle the features randomly, excluding columns that start with "Metadata_"
@@ -131,7 +92,7 @@ shuffled_plate6_df.head()
 
 # ## Apply model to final and shuffled versions of the plate data
 
-# In[6]:
+# In[5]:
 
 
 # Create list of the metadata columns only
@@ -145,9 +106,6 @@ processed_dfs = []
 
 # Loop through the data dictionary to create probability dataframes
 for data_type, data in data_dict.items():
-    # Drop rows with Metadata_genotype == "HET"
-    data = data[data["Metadata_genotype"] != "HET"]
-
     # Ensure no duplicates in data and reset index
     data = data.drop_duplicates().reset_index(drop=True)
 
@@ -157,8 +115,18 @@ for data_type, data in data_dict.items():
         data[model.feature_names_in_]
     )  # outputs as binary labels
 
-    # Convert true labels to binary values (0 or 1) for WT and Null
-    true_genotype = le.transform(data["Metadata_genotype"]).tolist()
+    # Make a copy of the column to avoid modifying the original dataframe
+    true_genotype = data["Metadata_genotype"].copy()
+
+    # Set HET values to 2 explicitly
+    true_genotype.loc[true_genotype == "HET"] = 2
+
+    # Use label encoder for the remaining values (excluding HET)
+    mask = true_genotype != 2  # Identify rows that are not HET
+    true_genotype.loc[mask] = le.transform(true_genotype.loc[mask])
+
+    # Convert dtype to integer
+    true_genotype = true_genotype.astype(int)
 
     # Create a dataframe with probabilities and predictions
     probability_df = pd.DataFrame(
@@ -183,8 +151,8 @@ for data_type, data in data_dict.items():
 # Combine all dataframes
 combined_df = pd.concat(processed_dfs, axis=0).reset_index(drop=True)
 
-# Save to Parquet (uncomment when needed)
-# combined_df.to_parquet(f"{model_dir}/plate_6_single_cell_probabilities.parquet")
+# Save to Parquet
+combined_df.to_parquet(f"{results_dir}/plate_6_single_cell_probabilities.parquet")
 
 # Print shape and head of data
 print(combined_df.shape)
@@ -193,7 +161,7 @@ combined_df.head()
 
 # ## Split the probability data by Institution
 
-# In[7]:
+# In[6]:
 
 
 # Create dictionary with the split dataframes based on Institution
@@ -203,16 +171,17 @@ institution_dfs = {
 }
 
 
-# ## Generate PR curve results
+# ## Generate PR curve results (for pre-visualization)
 
-# In[8]:
+# In[7]:
 
 
 precision_recall_data = []
 
 for institution, df in institution_dfs.items():
     for data_type in ["final", "shuffled"]:  # Compute separately for both types
-        subset_df = df[df["data_type"] == data_type]
+        # Subset for data type and remove the HET cells from evaluation
+        subset_df = df[(df["data_type"] == data_type) & (df["Metadata_genotype"] != "HET")]
 
         # Compute precision-recall curve
         precision, recall, _ = precision_recall_curve(
@@ -238,7 +207,7 @@ print(precision_recall_df.shape)
 precision_recall_df.head()
 
 
-# In[9]:
+# In[8]:
 
 
 # Set the style of the plot
@@ -277,11 +246,11 @@ plt.show()
 
 # ## Generate accuracy scores per institution and data type (final or shuffled)
 
-# In[10]:
+# In[9]:
 
 
-# Calculate accuracy per institution and data type (final or shuffled)
-accuracy_per_group = combined_df.groupby(
+# Calculate accuracy per institution and data type (final or shuffled) without the HET cells
+accuracy_per_group = combined_df[combined_df["Metadata_genotype"] != "HET"].groupby(
     ["Metadata_Institution", "data_type"]
 ).apply(lambda x: accuracy_score(x["true_genotype"], x["predicted_genotype"])).reset_index(name="accuracy")
 
@@ -291,7 +260,9 @@ accuracy_per_group.to_parquet(f"{results_dir}/plate6_accuracy_final_model.parque
 accuracy_per_group
 
 
-# In[11]:
+# ## Generate bar plot (for pre-visualization)
+
+# In[10]:
 
 
 # Set the style of the plot
@@ -317,8 +288,15 @@ plt.legend(title="Institution")
 plt.show()
 
 
-# In[ ]:
+# ## Look at how the accuracies break down per genotype
+
+# In[11]:
 
 
+# Calculate accuracy per genotype, institution and data type (final or shuffled)
+accuracy_per_group = combined_df[combined_df["Metadata_genotype"] != "HET"].groupby(
+    ["Metadata_genotype","Metadata_Institution", "data_type"]
+).apply(lambda x: accuracy_score(x["true_genotype"], x["predicted_genotype"])).reset_index(name="accuracy")
 
+accuracy_per_group
 
