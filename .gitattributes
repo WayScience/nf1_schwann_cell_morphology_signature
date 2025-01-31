@@ -5,3 +5,5 @@
 2.evaluate_models/classify_genotypes/model_evaluation_data/precision_recall_final_model.parquet filter=lfs diff=lfs merge=lfs -text
 1.train_models/classify_genotypes/model_data.parquet filter=lfs diff=lfs merge=lfs -text
 1.train_models/classify_genotypes/data/nf1_eval_data.parquet filter=lfs diff=lfs merge=lfs -text
+# Attempt to solve bug with the modified Git LFS pulled files
+*.parquet filter=lfs diff=lfs merge=lfs -text
