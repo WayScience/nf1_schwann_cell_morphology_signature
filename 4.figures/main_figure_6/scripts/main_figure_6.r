@@ -12,19 +12,19 @@ results_dir <- file.path(
     "../../3.assess_generalizability/results"
 )
 
+# Load in platemap data
+platemap_df <- read.csv(
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/0.download_data/metadata/platemap_NF1_plate6.csv"
+)
+
 # Path to UMAP results
 UMAP_results_dir <- file.path(
     "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/4.analyze_data/notebooks/UMAP/results"
 )
 
-# Load in platemap data to add Institution on to the UMAP results
-platemap_df <- read.csv(
-    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/0.download_data/metadata/platemap_NF1_plate6.csv"
-)
-
 # Subset the data frame and rename columns
-platemap_df <- platemap_df[, c("well_position", "Institution")]
-colnames(platemap_df) <- c("Metadata_Well", "Metadata_Institution")
+platemap_df_filtered <- platemap_df[, c("well_position", "Institution")]
+colnames(platemap_df_filtered) <- c("Metadata_Well", "Metadata_Institution")
 
 # Load data
 UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_Plate_6_sc_only_model_features.tsv")
@@ -32,7 +32,11 @@ UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_Plate_6_sc_only_model_fea
 UMAP_results_df <- readr::read_tsv(UMAP_results_file)
 
 # Merge institution info onto UMAP df
-UMAP_results_df <- platemap_df %>% inner_join(UMAP_results_df, by = "Metadata_Well")
+UMAP_results_df <- platemap_df_filtered %>% inner_join(UMAP_results_df, by = "Metadata_Well")
+
+# Add new column for cell line derivative
+UMAP_results_df <- UMAP_results_df %>%
+    mutate(cell_line_derivative = ifelse(Metadata_Institution == "iNFixion", 1, ifelse(Metadata_Institution == "MGH", 2, NA)))
 
 dim(UMAP_results_df)
 head(UMAP_results_df)
@@ -55,19 +59,20 @@ umap_fig_gg <- (
       )
   )
   + labs(x = "UMAP0", y = "UMAP1", color = "NF1\ngenotype")
-  + facet_grid(Metadata_Institution ~ ., labeller = labeller(Metadata_Institution = function(x) paste("Cell line source:", x)))
+  + facet_grid(cell_line_derivative ~ ., labeller = labeller(cell_line_derivative = function(x) paste("ipn02.3 2λ derivative:", x)))
+  + coord_fixed(ratio = 0.52)
   # change the text size
   + theme(
-      strip.text = element_text(size = 18),
+      strip.text = element_text(size = 17),
       # x and y axis text size
-      axis.text.x = element_text(size = 18),
-      axis.text.y = element_text(size = 18),
+      axis.text.x = element_text(size = 22),
+      axis.text.y = element_text(size = 22),
       # x and y axis title size
-      axis.title.x = element_text(size = 18),
-      axis.title.y = element_text(size = 18),
+      axis.title.x = element_text(size = 22),
+      axis.title.y = element_text(size = 22),
       # legend text size
-      legend.text = element_text(size = 18),
-      legend.title = element_text(size = 18)
+      legend.text = element_text(size = 20),
+      legend.title = element_text(size = 22)
   )
 )
 
@@ -82,6 +87,10 @@ PR_results_df <- arrow::read_parquet(PR_results_file)
 PR_results_df <- PR_results_df %>%
   mutate(shuffled_type = ifelse(grepl("^shuffled", data_type), "TRUE", "FALSE"))
 
+# Add new column for cell line derivative
+PR_results_df <- PR_results_df %>%
+    mutate(cell_line_derivative = factor(ifelse(Metadata_Institution == "iNFixion", 1, ifelse(Metadata_Institution == "MGH", 2, NA))))
+
 dim(PR_results_df)
 head(PR_results_df)
 
@@ -90,15 +99,15 @@ height <- 12
 options(repr.plot.width = width, repr.plot.height = height)
 
 pr_curve_plot <- (
-    ggplot(PR_results_df, aes(x = Recall, y = Precision, color = Metadata_Institution, linetype = shuffled_type))
+    ggplot(PR_results_df, aes(x = Recall, y = Precision, color = cell_line_derivative, linetype = shuffled_type))
     + geom_line(aes(linetype = shuffled_type), linewidth = 1)
     + theme_bw()
     # + coord_fixed()
-    + labs(color = "Cell line\nsource", linetype = "Features\nshuffled", x = "Recall", y = "Precision")
+    + labs(color = "ipn02.3 2λ\nderivative", linetype = "Features\nshuffled", x = "Recall", y = "Precision")
     # change the colors
     + scale_color_manual(values = c(
-        "iNFixion" = brewer.pal(8, "Dark2")[4],
-        "MGH" = brewer.pal(8, "Dark2")[3]
+        "1" = brewer.pal(8, "Dark2")[4],
+        "2" = brewer.pal(8, "Dark2")[3]
     ))
     + scale_y_continuous(limits = c(0, 1))
     # change the line thickness of the lines in the legend
@@ -106,14 +115,14 @@ pr_curve_plot <- (
     # change the text size
     + theme(
         # x and y axis text size
-        axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         # x and y axis title size
         axis.title.x = element_text(size = 22),
         axis.title.y = element_text(size = 22),
         # legend text size
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 22),
     )
 )
 
@@ -128,6 +137,10 @@ accuracy_results_df <- arrow::read_parquet(accuracy_results_file)
 accuracy_results_df <- accuracy_results_df %>%
   mutate(shuffled_type = ifelse(grepl("^shuffled", data_type), "TRUE", "FALSE"))
 
+# Add new column for cell line derivative
+accuracy_results_df <- accuracy_results_df %>%
+    mutate(cell_line_derivative = factor(ifelse(Metadata_Institution == "iNFixion", 1, ifelse(Metadata_Institution == "MGH", 2, NA))))
+
 dim(accuracy_results_df)
 head(accuracy_results_df)
 
@@ -136,7 +149,7 @@ height <- 8
 options(repr.plot.width = width, repr.plot.height = height)
 # bar plot of the accuracy scores
 accuracy_score_plot <- (
-    ggplot(accuracy_results_df, aes(x = shuffled_type, y = accuracy, fill = Metadata_Institution))
+    ggplot(accuracy_results_df, aes(x = shuffled_type, y = accuracy, fill = cell_line_derivative))
     + geom_bar(stat = "identity", position = "dodge")
 
     # Add text labels for accuracy scores on top of bars
@@ -152,27 +165,113 @@ accuracy_score_plot <- (
     + ylab("Accuracy")
     + xlab("Features shuffled")
     # change the legend title
-    + labs(fill = "Cell line\nsource")
+    + labs(fill = "ipn02.3 2λ\nderivative")
     # change the colours
     + scale_fill_manual(values = c(
-        "iNFixion" = brewer.pal(8, "Dark2")[4],
-        "MGH" = brewer.pal(8, "Dark2")[3]
+        "1" = brewer.pal(8, "Dark2")[4],
+        "2" = brewer.pal(8, "Dark2")[3]
     ))
     # change the text size
     + theme(
         # x and y axis text size
-        axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         # x and y axis title size
         axis.title.x = element_text(size = 22),
         axis.title.y = element_text(size = 22),
         # legend text size
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 22),
     )
 )
 
 accuracy_score_plot
+
+# Load data
+kstest_results_file <- file.path("../../3.assess_generalizability/results/ks_test_derivatives_results.parquet")
+
+kstest_results_df <- arrow::read_parquet(kstest_results_file)
+
+# Create a new column extracting the first part of 'feature' after the compartment
+kstest_results_df$feature_base <- sub("^[^_]+_", "", kstest_results_df$feature)
+
+dim(kstest_results_df)
+head(kstest_results_df)
+
+width <- 10
+height <- 8
+options(repr.plot.width = width, repr.plot.height = height)
+
+# Update feature group name
+kstest_results_df$feature_group <- ifelse(kstest_results_df$feature_group == "RadialDistribution", "RadialDist", kstest_results_df$feature_group)
+
+# Reorder feature_base based on the median of ks_stat for each feature
+kstest_results_df$feature_base <- factor(kstest_results_df$feature_base, 
+                                         levels = kstest_results_df %>% 
+                                           group_by(feature_base) %>% 
+                                           summarise(median_ks = median(ks_stat)) %>% 
+                                           arrange(desc(median_ks)) %>% 
+                                           pull(feature_base))
+
+# Create the plot
+ks_test_scatter <- (
+    ggplot(kstest_results_df, aes(x = feature_base, y = ks_stat))
+    + geom_point(aes(color = feature_group), size = 2, alpha = 0.5) 
+    + theme_bw()
+    + facet_grid(compartment ~ .)
+    + theme(
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 23),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 22),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 22),
+        strip.text = element_text(size = 22),
+        panel.spacing = unit(1, "lines"),
+        legend.position = "right"
+    )
+    + ylim(0,1)
+    + scale_color_discrete(name = "Feature\ngroup")
+    + labs(
+        x = "CellProfiler feature",
+        y = "KS test statistic"
+    )
+)
+
+ks_test_scatter
+
+# Drop rows where genotype is 'HET'
+platemap_df <- platemap_df %>%
+    filter(genotype != "HET")
+
+# Add new column for cell line derivative
+platemap_df <- platemap_df %>%
+    mutate(cell_line_derivative = factor(ifelse(Institution == "iNFixion", 1, ifelse(Institution == "MGH", 2, NA))))
+
+width <- 10
+height <- 8
+options(repr.plot.width = width, repr.plot.height = height)
+
+# Generate platemap figure
+platemap <-
+    platetools::raw_map(
+        data = platemap_df$genotype,
+        well = platemap_df$well_position,
+        plate = 96,
+        size = 12
+    ) +
+    coord_fixed(ratio = 1.0) +
+    ggplot2::scale_fill_discrete(name = "NF1\ngenotype") +
+    ggplot2::geom_point(aes(shape = platemap_df$cell_line_derivative)) +
+    ggplot2::scale_shape_discrete(name = "ipn02.3 2λ\nderivative") +
+    theme(
+        legend.title = element_text(size = 22),  # Larger legend title
+        legend.text = element_text(size = 20),  # Larger legend text
+        axis.text = element_text(size = 22),  # Larger axis tick labels
+        axis.title = element_text(size = 22)  # Larger axis titles
+    )
+
+platemap
 
 height <- 8
 width <- 6
@@ -186,13 +285,35 @@ right_plot <- (
 right_plot
 
 height <- 8
-width <- 14
+width <- 15
+options(repr.plot.width = width, repr.plot.height = height)
+
+align_bottom_plot <- (
+    right_plot |
+    ks_test_scatter
+) + plot_layout(widths = c(1,1))
+
+align_bottom_plot
+
+height <- 10
+width <- 16
+options(repr.plot.width = width, repr.plot.height = height)
+
+platemap_umap <- (
+    platemap /
+    umap_fig_gg
+) + plot_layout(heights = c(1,1.5))
+
+platemap_umap
+
+height <- 12
+width <- 25
 options(repr.plot.width = width, repr.plot.height = height)
 
 align_plot <- (
-    umap_fig_gg |
-    right_plot
-) + plot_layout(widths = c(3,2))
+    platemap_umap |
+    align_bottom_plot
+) + plot_layout(widths = c(0.5,1))
 
 align_plot
 
@@ -201,4 +322,4 @@ fig_6_gg <- (
 ) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 25))
 
 # Save the plot
-ggsave(output_main_figure_6, plot = fig_6_gg, dpi = 500, height = 8, width = 14)
+ggsave(output_main_figure_6, plot = fig_6_gg, dpi = 500, height = height, width = width)
