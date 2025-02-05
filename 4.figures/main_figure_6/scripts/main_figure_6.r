@@ -197,7 +197,10 @@ kstest_results_df <- arrow::read_parquet(kstest_results_file)
 kstest_results_df$feature_base <- sub("^[^_]+_", "", kstest_results_df$feature)
 
 # Update the channel column where anything other than DAPI, CY5, GFP, or RFP is called "other"
-kstest_results_df$channel <- ifelse(kstest_results_df$channel %in% c("DAPI", "CY5", "GFP", "RFP"), kstest_results_df$channel, "other")
+kstest_results_df$channel <- ifelse(kstest_results_df$channel %in% c("DAPI", "CY5", "GFP", "RFP"), kstest_results_df$channel, "Other")
+
+# Update the channel names
+kstest_results_df$channel <- recode(kstest_results_df$channel, "DAPI" = "Nuclei", "GFP" = "ER", "CY5" = "Mito", "RFP" = "F-actin")
 
 dim(kstest_results_df)
 head(kstest_results_df)
