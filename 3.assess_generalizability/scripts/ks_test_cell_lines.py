@@ -13,9 +13,10 @@
 import pathlib
 import pandas as pd
 from scipy import stats
+from joblib import load
 
 
-# ## Set results directory
+# ## Set results directory and load in model to get list of the features used
 
 # In[2]:
 
@@ -23,6 +24,12 @@ from scipy import stats
 # Set results directory
 results_dir = pathlib.Path("./results")
 results_dir.mkdir(exist_ok=True)
+
+# Load in model
+model = load(pathlib.Path("../1.train_models/data/trained_nf1_model.joblib"))
+model_features = list(model.feature_names_in_)
+
+len(model_features)
 
 
 # ## Load in Plate 6 normalized data
@@ -73,14 +80,38 @@ print("\nKS-test results for normalized data:")
 ks_test_results_norm_df.head()
 
 
-# ## Split feature names into parts and save results
+# ## Add absolute value coefficients per feature to the results
 
 # In[6]:
+
+
+feat_import_df = pd.read_parquet(
+    pathlib.Path(
+        "../2.evaluate_model/model_evaluation_data/feature_importances.parquet"
+    )
+)
+
+# Take the absolute value of the feature importance
+feat_import_df["feature_importances"] = feat_import_df["feature_importances"].abs()
+
+# Change the column name from feature_names to feature
+feat_import_df = feat_import_df.rename(columns={"feature_names": "feature"})
+
+# Merge the feature importance data with the KS test results
+ks_test_results_norm_df = ks_test_results_norm_df.merge(feat_import_df, on="feature")
+
+ks_test_results_norm_df.head()
+
+
+# ## Split feature names into parts and save results
+
+# In[7]:
 
 
 # Split the feature column into parts
 ks_test_results_norm_df[
     [
+        "compartment",
         "feature_group",
         "measurement",
         "channel",
@@ -91,12 +122,18 @@ ks_test_results_norm_df[
 ] = (
     ks_test_results_norm_df["feature"]
     .str.split("_", expand=True)
-    .reindex(columns=range(6), fill_value=pd.NA)
+    .reindex(columns=range(7), fill_value=pd.NA)
 )
+
+# Filter out features not in model_features
+ks_test_results_norm_df = ks_test_results_norm_df[
+    ks_test_results_norm_df["feature"].isin(model_features)
+]
 
 # Save the results
 ks_test_results_norm_df.to_parquet(pathlib.Path(f"{results_dir}/ks_test_derivatives_results.parquet"))
 
 # Display the updated DataFrame
+print(ks_test_results_norm_df.shape)
 ks_test_results_norm_df.head()
 

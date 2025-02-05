@@ -216,7 +216,7 @@ kstest_results_df$feature_base <- factor(kstest_results_df$feature_base,
 # Create the plot
 ks_test_scatter <- (
     ggplot(kstest_results_df, aes(x = feature_base, y = ks_stat))
-    + geom_point(aes(color = feature_group), size = 2, alpha = 0.5) 
+    + geom_point(aes(color = feature_group, size = feature_importances), alpha = 0.4) 
     + theme_bw()
     + facet_grid(compartment ~ .)
     + theme(
@@ -232,6 +232,7 @@ ks_test_scatter <- (
     )
     + ylim(0,1)
     + scale_color_discrete(name = "Feature\ngroup")
+    + scale_size_continuous(name = "Feature\nimportance", range = c(1, 8)) 
     + labs(
         x = "CellProfiler feature",
         y = "KS test statistic"
