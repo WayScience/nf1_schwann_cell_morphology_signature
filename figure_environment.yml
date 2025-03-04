@@ -24,4 +24,5 @@ dependencies:
   - conda-forge::r-reshape2
   - conda-forge::r-arrow
   - conda-forge::r-ggridges
+  - conda-forge::r-prroc
   - bioconda::bioconductor-complexheatmap

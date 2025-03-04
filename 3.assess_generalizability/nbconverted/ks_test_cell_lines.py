@@ -137,3 +137,12 @@ ks_test_results_norm_df.to_parquet(pathlib.Path(f"{results_dir}/ks_test_derivati
 print(ks_test_results_norm_df.shape)
 ks_test_results_norm_df.head()
 
+
+# ## Print rows from the top five feature importances
+
+# In[8]:
+
+
+ks_test_results_norm_df = ks_test_results_norm_df.sort_values(by="feature_importances", ascending=False)
+ks_test_results_norm_df.head()
+

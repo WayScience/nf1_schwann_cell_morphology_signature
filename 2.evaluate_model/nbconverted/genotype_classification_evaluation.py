@@ -22,6 +22,7 @@ from sklearn.metrics import (
     recall_score,
 )
 
+
 # ## Find the root of the git repo on the host system
 
 # In[2]:
@@ -52,11 +53,11 @@ if root_dir is None:
 # In[3]:
 
 
-data_path = pathlib.Path(f"{root_dir}/1.train_models/classify_genotypes/data")
+data_path = pathlib.Path(f"{root_dir}/1.train_models/data")
 
-evaldf = pd.read_parquet(f"{data_path}/nf1_model_pre_evaluation_results.parquet")
-model = load(f"{data_path}/trained_nf1_model.joblib")
-le = load(f"{data_path}/trained_nf1_model_label_encoder.joblib")
+evaldf = pd.read_parquet(f"{data_path}/nf1_model_pre_evaluation_results_qc.parquet")
+model = load(f"{data_path}/trained_nf1_model_qc.joblib")
+le = load(f"{data_path}/trained_nf1_model_label_encoder_qc.joblib")
 
 
 # In[4]:
@@ -192,12 +193,12 @@ for split in evaldf["datasplit"].unique():
 
 
 for met, met_data in eval_mets.items():
-    pd.DataFrame(eval_mets[met]).to_parquet(f"{eval_path}/{met}_final_model.parquet")
+    pd.DataFrame(eval_mets[met]).to_parquet(f"{eval_path}/{met}_final_qc_model.parquet")
 
 pd.DataFrame(
     {
         "feature_names": model.feature_names_in_,
         "feature_importances": model.coef_.reshape(-1)
     }
-).to_parquet(f"{eval_path}/feature_importances.parquet")
+).to_parquet(f"{eval_path}/feature_importances_qc.parquet")
 

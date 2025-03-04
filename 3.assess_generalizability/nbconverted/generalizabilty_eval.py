@@ -55,9 +55,6 @@ plate6_df = pd.read_parquet(
     )
 )
 
-# # Remove rows where Metadata_genotype is "HET"
-# plate6_df = plate6_df[plate6_df["Metadata_genotype"] != "HET"].reset_index(drop=True)
-
 # Count rows before dropping NaNs
 initial_count = plate6_df.shape[0]
 
