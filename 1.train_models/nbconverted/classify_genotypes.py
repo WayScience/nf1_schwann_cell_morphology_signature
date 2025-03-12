@@ -55,19 +55,22 @@ if root_dir is None:
 # In[3]:
 
 
+# OPTIONAL: If the data (within the cell painting directory) is stored in a different location, add location here
+repo_dir = pathlib.Path(root_dir / "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/")
+
 # Set data level
 data_level = "cleaned"
 
 # Main directory path (converted or cleaned data)
 if data_level == "cleaned":
     data_dir = pathlib.Path(
-        root_dir
-        / "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles"
+        repo_dir
+        / "3.processing_features/data/single_cell_profiles/cleaned_sc_profiles"
     )
 else:
     data_dir = pathlib.Path(
-        root_dir
-        / "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/3.processing_features/data/single_cell_profiles"
+        repo_dir
+        / "3.processing_features/data/single_cell_profiles"
     )
 
 plate3df_path = pathlib.Path(data_dir / "Plate_3_sc_feature_selected.parquet").resolve(
@@ -105,7 +108,7 @@ data_path.mkdir(parents=True, exist_ok=True)
 # ## Splitting and Processing
 # Functions to split and process data
 
-# In[5]:
+# In[ ]:
 
 
 gene_column = "Metadata_genotype"
@@ -180,7 +183,7 @@ def store_pre_evaluation_data(_X, _y, _metadata, _datasplit):
     _datasplit: String
         Data split name.
     """
-
+    
     eval_data[f"probability_{probability_class}"].extend(logreg.predict_proba(_X)[:, 1].tolist())
     eval_data["datasplit"].extend([_datasplit] * _X.shape[0])
     eval_data["predicted_genotype"].extend(logreg.predict(_X).tolist())
