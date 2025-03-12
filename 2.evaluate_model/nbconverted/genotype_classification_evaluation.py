@@ -53,11 +53,21 @@ if root_dir is None:
 # In[3]:
 
 
+# Set data type for the model evaluation
+data_type = "cleaned"
+
+# Set path to data directory
 data_path = pathlib.Path(f"{root_dir}/1.train_models/data")
 
-evaldf = pd.read_parquet(f"{data_path}/nf1_model_pre_evaluation_results_qc.parquet")
-model = load(f"{data_path}/trained_nf1_model_qc.joblib")
-le = load(f"{data_path}/trained_nf1_model_label_encoder_qc.joblib")
+# Set suffix for data files if using QC or cleaned data
+if data_type == "cleaned":
+    suffix = "_qc"
+else:
+    suffix = ""
+
+evaldf = pd.read_parquet(f"{data_path}/nf1_model_pre_evaluation_results{suffix}.parquet")
+model = load(f"{data_path}/trained_nf1_model{suffix}.joblib")
+le = load(f"{data_path}/trained_nf1_model_label_encoder{suffix}.joblib")
 
 
 # In[4]:

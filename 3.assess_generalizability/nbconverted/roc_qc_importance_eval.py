@@ -67,7 +67,8 @@ plate_6_no_QC = pd.read_parquet(
     )
 )
 
-# Drop rows where Metadata_genotype is HET
+# Drop rows where Metadata_genotype is HET as the model is not predicting this class
+# and would not contribute to the evaluation
 plate_6_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_genotype"] != "HET"]
 
 print(plate_6_no_QC.shape[0])
@@ -103,7 +104,8 @@ plate_6_QC = pd.read_parquet(
     )
 )
 
-# Drop rows where Metadata_genotype is HET
+# Drop rows where Metadata_genotype is HET as the model is not predicting this class
+# and would not contribute to the evaluation
 plate_6_QC = plate_6_QC[plate_6_QC["Metadata_genotype"] != "HET"]
 
 print(plate_6_no_QC.shape[0])
