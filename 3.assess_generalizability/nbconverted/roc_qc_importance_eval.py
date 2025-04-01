@@ -10,6 +10,8 @@
 # 
 # Our goal is to evaluate if QC is important enough to perform within our workflows where we see a higher performance in classification than if we performed no QC at all.
 
+# ## Import libraries
+
 # In[1]:
 
 
@@ -20,16 +22,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
-from sklearn.utils import resample
 import matplotlib.colors as mcolors
 from scipy.stats import ttest_ind
 
 import sys
 
 sys.path.append("../utils")
-# from training_utils import get_X_y_data
 from roc_eval_utils import bootstrap_roc_auc
 
+
+# ## Set output directory for ROC AUC figure
 
 # In[2]:
 
@@ -39,18 +41,20 @@ figure_path = pathlib.Path("./figures")
 figure_path.mkdir(exist_ok=True)
 
 
+# ## Load in label encoder (no QC and QC encoders have the same mapping so only one is loaded in)
+
 # In[3]:
 
 
 # load in label encoder
-le = load(
-    pathlib.Path("../1.train_models/data/trained_nf1_model_label_encoder_qc.joblib")
-)
+le = load(pathlib.Path("../1.train_models/data/trained_nf1_model_label_encoder.joblib"))
 
 # Print label mapping
 label_mapping = {label: le.transform([label])[0] for label in le.classes_}
 print(label_mapping)
 
+
+# ## Extract probabilities from the no QC model applied to the no QC'd holdout plate
 
 # In[4]:
 
@@ -89,6 +93,8 @@ y_binary_no_QC = le.transform(y)
 y_probs_modelNoQC = no_QC_model.predict_proba(X)[:, 1]
 
 
+# ## Extract probabilities from the QC model applied to the QC'd holdout plate
+
 # In[5]:
 
 
@@ -126,6 +132,8 @@ y_binary_QC = le.transform(y)
 y_probs_modelQC = QC_model.predict_proba(X)[:, 1]
 
 
+# ## Calculate ROC AUC score from the QC and no QC model and data
+
 # In[6]:
 
 
@@ -136,6 +144,8 @@ aucQC = roc_auc_score(y_binary_QC, y_probs_modelQC)
 print(f"AUC Model 1: {aucNoQC}")
 print(f"AUC Model 2: {aucQC}")
 
+
+# ## Perform ROC AUC bootstrapping method for both QC and no QC models and data
 
 # In[7]:
 
@@ -185,7 +195,11 @@ plt.axvline(
 plt.legend(loc="upper left", fontsize=10)
 plt.xlabel("ROC AUC Score", fontsize=12)
 plt.ylabel("Frequency", fontsize=12)
-plt.title("Bootstrap ROC AUC Distributions For\nQC versus No QC Data", fontsize=14, fontweight="bold")
+plt.title(
+    "Bootstrap ROC AUC Distributions For\nQC versus No QC Data",
+    fontsize=14,
+    fontweight="bold",
+)
 plt.grid(True, linestyle="--", alpha=0.6)
 plt.tight_layout()
 

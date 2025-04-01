@@ -15,12 +15,11 @@ import sys
 import pandas as pd
 
 # Path to correlation class
-sys.path.append(
-    "../utils"
-)
+sys.path.append("../utils")
 
 # Class for calculating correlations
 from CorrelateData import CorrelateData
+
 
 # ## Find the root of the git repo on the host system
 
@@ -50,11 +49,29 @@ if root_dir is None:
 # In[3]:
 
 
-data_path = pathlib.Path(root_dir / "nf1_painting_repo/3.processing_features/data/single_cell_profiles").resolve(strict=True)
+# Set data type for the model evaluation
+data_type = "cleaned"
 
-plate3df_path = pathlib.Path(root_dir / data_path / "Plate_3_bulk_camerons_method.parquet").resolve(strict=True)
-plate3pdf_path = pathlib.Path(root_dir / data_path / "Plate_3_prime_bulk_camerons_method.parquet").resolve(strict=True)
-plate5df_path = pathlib.Path(root_dir / data_path / "Plate_5_bulk_camerons_method.parquet").resolve(strict=True)
+# Set data path based on if apply QC (cleaned) or not QC'd data
+if data_type == "cleaned":
+    data_path = pathlib.Path(
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles"
+).resolve(strict=True)
+else:
+    data_path = pathlib.Path(
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/3.processing_features/data/single_cell_profiles"
+).resolve(strict=True)
+
+# Set paths for each plate and load into memory
+plate3df_path = pathlib.Path(
+    root_dir / data_path / "Plate_3_bulk_camerons_method.parquet"
+).resolve(strict=True)
+plate3pdf_path = pathlib.Path(
+    root_dir / data_path / "Plate_3_prime_bulk_camerons_method.parquet"
+).resolve(strict=True)
+plate5df_path = pathlib.Path(
+    root_dir / data_path / "Plate_5_bulk_camerons_method.parquet"
+).resolve(strict=True)
 
 plate3df = pd.read_parquet(plate3df_path)
 plate3pdf = pd.read_parquet(plate3pdf_path)
@@ -78,7 +95,9 @@ plate_correlation_path.mkdir(parents=True, exist_ok=True)
 # In[5]:
 
 
-plates_cols = plate3df.columns.intersection(plate3pdf.columns).intersection(plate5df.columns)
+plates_cols = plate3df.columns.intersection(plate3pdf.columns).intersection(
+    plate5df.columns
+)
 platesdf = pd.concat([plate3df, plate3pdf, plate5df], axis=0)
 platesdf = platesdf[plates_cols]
 
@@ -114,8 +133,7 @@ correlationsdf = []
 
 for genotype in platesdf["Metadata_genotype"].unique():
 
-    correlation_params = {
-    }
+    correlation_params = {}
 
     correlationsdf.append(
         cd.inter_correlations(
@@ -123,7 +141,7 @@ for genotype in platesdf["Metadata_genotype"].unique():
             _antehoc_group_cols=["Metadata_Plate"],
             _feat_cols=morph_cols,
             _posthoc_group_cols=["Metadata_Well", "Metadata_genotype"],
-            _drop_cols=["Metadata_Well"]
+            _drop_cols=["Metadata_Well"],
         )
     )
 
@@ -140,7 +158,7 @@ correlationsdf.append(
         _antehoc_group_cols=["Metadata_genotype"],
         _feat_cols=morph_cols,
         _posthoc_group_cols=["Metadata_Plate", "Metadata_Well"],
-        _drop_cols=["Metadata_Well"]
+        _drop_cols=["Metadata_Well"],
     )
 )
 
@@ -156,7 +174,7 @@ correlationsdf.append(
         _antehoc_group_cols=["Metadata_Plate", "Metadata_genotype"],
         _feat_cols=morph_cols,
         _posthoc_group_cols=["Metadata_Well"],
-        _drop_cols=["Metadata_Well"]
+        _drop_cols=["Metadata_Well"],
     )
 )
 
@@ -167,7 +185,9 @@ correlationsdf.append(
 
 
 correlationsdf = pd.concat(correlationsdf, axis=0)
-correlationsdf.to_parquet(plate_correlation_path / "well_agg_plate_genotype_correlations.parquet")
+correlationsdf.to_parquet(
+    plate_correlation_path / "well_agg_plate_genotype_correlations.parquet"
+)
 
 
 # In[13]:
