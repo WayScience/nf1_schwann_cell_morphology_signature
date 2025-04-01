@@ -35,7 +35,11 @@ else:
     suffix = ""
 
 # Load in model
-model = load(pathlib.Path(f"../1.train_models/data/trained_nf1_model{suffix}.joblib").resolve(strict=True))
+model = load(
+    pathlib.Path(f"../1.train_models/data/trained_nf1_model{suffix}.joblib").resolve(
+        strict=True
+    )
+)
 model_features = list(model.feature_names_in_)
 
 len(model_features)
@@ -146,8 +150,17 @@ ks_test_results_norm_df = ks_test_results_norm_df[
     ks_test_results_norm_df["feature"].isin(model_features)
 ]
 
-# Save the results
-ks_test_results_norm_df.to_parquet(pathlib.Path(f"{results_dir}/ks_test_derivatives_results.parquet"))
+# Save the results with qc suffix if data is cleaned
+if data_type == "cleaned":
+    ks_test_results_file = (
+        pathlib.Path(results_dir) / "ks_test_derivatives_results_qc.parquet"
+    )
+else:
+    ks_test_results_file = (
+        pathlib.Path(results_dir) / "ks_test_derivatives_results.parquet"
+    )
+
+ks_test_results_norm_df.to_parquet(ks_test_results_file)
 
 # Display the updated DataFrame
 print(ks_test_results_norm_df.shape)
@@ -159,6 +172,8 @@ ks_test_results_norm_df.head()
 # In[8]:
 
 
-ks_test_results_norm_df = ks_test_results_norm_df.sort_values(by="feature_importances", ascending=False)
+ks_test_results_norm_df = ks_test_results_norm_df.sort_values(
+    by="feature_importances", ascending=False
+)
 ks_test_results_norm_df.head()
 

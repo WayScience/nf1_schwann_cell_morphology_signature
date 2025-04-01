@@ -185,9 +185,13 @@ correlationsdf.append(
 
 
 correlationsdf = pd.concat(correlationsdf, axis=0)
-correlationsdf.to_parquet(
-    plate_correlation_path / "well_agg_plate_genotype_correlations.parquet"
-)
+# Save correlations dataframe with qc suffix if data is cleaned
+if data_type == "cleaned":
+    correlations_file = plate_correlation_path / "well_agg_plate_genotype_correlations_qc.parquet"
+else:
+    correlations_file = plate_correlation_path / "well_agg_plate_genotype_correlations.parquet"
+
+correlationsdf.to_parquet(correlations_file)
 
 
 # In[13]:
