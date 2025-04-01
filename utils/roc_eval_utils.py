@@ -9,13 +9,10 @@ def bootstrap_roc_auc(
     y_true: Union[np.ndarray, list],
     y_pred: Union[np.ndarray, list],
     n_bootstraps: int = 1000,
+    random_seed: int = 0,
 ) -> np.ndarray:
     """
     Perform bootstrapping to compute the distribution of ROC AUC scores.
-
-    This function generates a bootstrapped distribution of ROC AUC scores by
-    resampling the provided true labels and predicted probabilities with
-    replacement.
 
     Parameters:
     ----------
@@ -28,25 +25,24 @@ def bootstrap_roc_auc(
     n_bootstraps : int, optional, default=1000
         Number of bootstrap iterations to perform.
 
+    random_seed : int, optional, default=0
+        Random seed for reproducibility.
+
     Returns:
     -------
     bootstrapped_scores : np.ndarray
-        An array of bootstrapped ROC AUC scores. Each element represents the
-        ROC AUC computed for a resampled dataset.
+        An array of bootstrapped ROC AUC scores.
     """
-    # list for the scores to be appended to
+    rng = np.random.default_rng(random_seed)  # Create a reproducible random generator
     bootstrapped_scores = []
 
-    # loop through and create the amount of bootstrap samples and calculate ROC scores
-    for i in range(n_bootstraps):
-        indices = resample(np.arange(len(y_true)), replace=True)
-        # evaluate if the subsample has both classes
+    for _ in range(n_bootstraps):
+        indices = rng.choice(
+            len(y_true), size=len(y_true), replace=True
+        )  # Reproducible resampling
         if len(np.unique(y_true[indices])) < 2:
-            # skip this subsample if it doesn't have both classes
             continue
-        # if there are both classes, then calculate the score
-        else:
-            score = roc_auc_score(y_true[indices], y_pred[indices])
-            bootstrapped_scores.append(score)
+        score = roc_auc_score(y_true[indices], y_pred[indices])
+        bootstrapped_scores.append(score)
 
     return np.array(bootstrapped_scores)
