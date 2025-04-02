@@ -52,40 +52,41 @@ UMAP_results_df <- UMAP_results_df %>%
 dim(UMAP_results_df)
 head(UMAP_results_df)
 
-width <- 10
-height <- 10
-options(repr.plot.width = width, repr.plot.height = height)
-
 umap_fig_gg <- (
-        ggplot(UMAP_results_df, aes(x = UMAP0, y = UMAP1))
-        + geom_point(
-                        aes(color = Metadata_genotype),
-                        size = 1.0,
-                        alpha = 0.4
+    ggplot(UMAP_results_df, aes(x = UMAP0, y = UMAP1)) +
+    geom_point(
+        aes(color = Metadata_genotype),
+        size = 1.0,
+        alpha = 0.4
+    ) +
+    theme_bw() +
+    guides(
+        color = guide_legend(
+            override.aes = list(size = 5)
         )
-        + theme_bw()
-        + guides(
-                        color = guide_legend(
-                                        override.aes = list(size = 5)
-                        )
+    ) +
+    labs(x = "UMAP0", y = "UMAP1", color = "NF1\ngenotype") +
+    facet_wrap(
+        cell_line_code ~ cell_line_derivative, 
+        labeller = labeller(
+            cell_line_code = function(x) paste("Cell line code:", x),
+            cell_line_derivative = function(x) paste("ipn02.3 2λ:", x)
         )
-        + labs(x = "UMAP0", y = "UMAP1", color = "NF1\ngenotype")
-        + facet_wrap(~ factor(cell_line_code), 
-                   labeller = labeller(.default = function(x) paste("Cell line code:", x)))
-        + coord_fixed(ratio = 1.0)
-        # change the text size
-        + theme(
-                        strip.text = element_text(size = 17),
-                        # x and y axis text size
-                        axis.text.x = element_text(size = 22),
-                        axis.text.y = element_text(size = 22),
-                        # x and y axis title size
-                        axis.title.x = element_text(size = 22),
-                        axis.title.y = element_text(size = 22),
-                        # legend text size
-                        legend.text = element_text(size = 20),
-                        legend.title = element_text(size = 22)
-        )
+    ) +
+    coord_fixed(ratio = 1.0) + 
+    # Change the text size
+    theme(
+        strip.text = element_text(size = 17),
+        # X and Y axis text size
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
+        # X and Y axis title size
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        # Legend text size
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 22)
+    )
 )
 
 umap_fig_gg
@@ -123,7 +124,7 @@ pr_curve_plot <- (
     ))
     + scale_y_continuous(limits = c(0, 1))
     # change the line thickness of the lines in the legend
-    + guides(linetype = guide_legend(override.aes = list(size = 1)))  
+    + guides(linetype = guide_legend(override.aes = list(size = 1)))
     # change the text size
     + theme(
         # x and y axis text size

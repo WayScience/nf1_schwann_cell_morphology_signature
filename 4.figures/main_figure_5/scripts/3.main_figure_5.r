@@ -126,5 +126,3 @@ fig_5_gg <- (
 
 # Save or display the plot
 ggsave(output_main_figure_5, plot = fig_5_gg, dpi = 500, height = 16, width = 22)
-
-

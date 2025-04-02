@@ -122,12 +122,12 @@ blank <- (
 # ggplot of just text for labelling y axis
 WT_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "WT (NF1 +/+) genotype\nrepresentative single cells"), size = text_size, angle = 90) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "WT A3 (NF1 +/+) genotype\nrepresentative single cells"), size = text_size, angle = 90) 
     + theme_void()
 )
 Null_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "Null (NF1 -/-) genotype\nrepresentative single cells"), size = text_size, angle = 90) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Null C04 (NF1 -/-) genotype\nrepresentative single cells"), size = text_size, angle = 90) 
     + theme_void()
 )
 
@@ -339,5 +339,3 @@ ggsave(
     ),
     second_top_feat_plot_min, width = width, height = height, dpi = 600
 )
-
-
