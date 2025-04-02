@@ -4,23 +4,30 @@ suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(patchwork))
 
 figure_dir <- "../figures/supplementary"
-output_supp_figure_1 <- file.path(figure_dir, "supp_figure_1_splitbyplate.png")
+output_supp_figure <- file.path(figure_dir, "supp_figure_3_splitbyplate.png")
 
 # Path to UMAP results
 UMAP_results_dir <- file.path(
-    "../../../nf1_cellpainting_data/4.analyze_data/notebooks/UMAP/results/"
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/4.analyze_data/notebooks/UMAP/results/qc_profiles_results"
 )
 
 # Load data
-UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_concat_model_plates_sc_feature_selected.tsv")
+UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_concat_model_plates_sc_feature_selected_qc.tsv")
 
 UMAP_results_df <- readr::read_tsv(UMAP_results_file)
 
 UMAP_results_df <- UMAP_results_df %>%
-  mutate(Metadata_Plate = recode(Metadata_Plate,
-                        "Plate_3" = "Plate A",
-                        "Plate_3_prime" = "Plate B",
-                        "Plate_5" = "Plate C"))
+  mutate(
+    Metadata_Plate = recode(Metadata_Plate,
+                            "Plate_3" = "Plate A",
+                            "Plate_3_prime" = "Plate B",
+                            "Plate_5" = "Plate C"),
+    cell_line_code = case_when(
+      Metadata_genotype == "Null" ~ "Null C04",
+      Metadata_genotype == "WT" ~ "WT A3",
+      TRUE ~ NA_character_
+    )
+  )
 
 dim(UMAP_results_df)
 head(UMAP_results_df)
@@ -32,7 +39,7 @@ options(repr.plot.width = width, repr.plot.height = height)
 umap_fig_gg <- (
   ggplot(UMAP_results_df, aes(x = UMAP0, y = UMAP1))
   + geom_point(
-      aes(color = Metadata_genotype),
+      aes(color = cell_line_code),
       size = 0.2,
       alpha = 0.4
   )
@@ -66,7 +73,7 @@ UMAP_results_df$Metadata_genotype <- na_if(UMAP_results_df$Metadata_genotype, ""
 
 # Group by both Metadata_genotype and Metadata_Plate and summarize the count of rows per group
 per_plate_counts <- UMAP_results_df %>%
-    group_by(Metadata_genotype, Metadata_Plate) %>%
+    group_by(Metadata_genotype, Metadata_Plate, cell_line_code) %>%
     summarize(count = n(), .groups = 'drop')
 
 # Confirm any NA values are "Null" strings in Metadata_genotype column
@@ -77,7 +84,7 @@ dim(per_plate_counts)
 per_plate_counts
 
 # Create the histogram plot with adjusted dodge width
-histogram_plot <- ggplot(per_plate_counts, aes(x = Metadata_genotype, y = count, fill = Metadata_genotype)) +
+histogram_plot <- ggplot(per_plate_counts, aes(x = cell_line_code, y = count, fill = Metadata_genotype)) +
     geom_bar(stat = "identity", position = position_dodge(width = 1.0)) +  # Adjust dodge width
     geom_text(aes(label = count), position = position_dodge(width = 1.0), vjust = -0.5, size = 5) +  # Adjust dodge width
     labs(x = "Genotype", y = "Single-cell count", fill = "NF1\ngenotype") + 
@@ -86,7 +93,7 @@ histogram_plot <- ggplot(per_plate_counts, aes(x = Metadata_genotype, y = count,
     facet_grid(~Metadata_Plate) +  # Facet by Metadata_Plate
     theme(
         # x and y axis text size
-        axis.text.x = element_text(size = 18),
+        axis.text.x = element_text(size = 18, angle = 45, hjust =1),
         axis.text.y = element_text(size = 18),
         # axis title size
         axis.title.x = element_text(size = 18),
@@ -108,7 +115,7 @@ corr_results_dir <- file.path(
 )
 
 # Load data
-corr_results_file <- file.path(corr_results_dir, "well_agg_plate_genotype_correlations.parquet")
+corr_results_file <- file.path(corr_results_dir, "well_agg_plate_genotype_correlations_qc.parquet")
 corr_results_df <- arrow::read_parquet(corr_results_file)
 
 # Rename plates in both group columns
@@ -198,11 +205,11 @@ align_plot <- (
 
 align_plot
 
-supp_fig_1_gg <- (
+supp_fig_gg <- (
   align_plot
 ) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 25))
 
 # Save or display the plot
-ggsave(output_supp_figure_1, plot = supp_fig_1_gg, dpi = 500, height = 10, width = 9)
+ggsave(output_supp_figure, plot = supp_fig_gg, dpi = 500, height = 10, width = 9)
 
-supp_fig_1_gg
+supp_fig_gg

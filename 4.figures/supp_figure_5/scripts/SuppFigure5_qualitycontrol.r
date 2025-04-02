@@ -5,11 +5,11 @@ suppressPackageStartupMessages(library(patchwork))
 suppressPackageStartupMessages(library(arrow))
 
 figure_dir <- "../figures/supplementary"
-output_supp_figure_3 <- file.path(figure_dir, "supp_figure_3_qualitycontrol.png")
+output_supp_figure <- file.path(figure_dir, "supp_figure_5_qualitycontrol.png")
 
 # Path to quality control results
 qc_results_dir <- file.path(
-    "../../../nf1_cellpainting_data/1.cellprofiler_ic/image_quality_control"
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/1.cellprofiler_ic/image_quality_control/"
 )
 
 # Load data
@@ -114,11 +114,11 @@ align_plot <- (
 
 align_plot
 
-supp_fig_3_gg <- (
+supp_fig_gg <- (
   align_plot
 ) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 25))
 
 # Save or display the plot
-ggsave(output_supp_figure_3, plot = supp_fig_3_gg, dpi = 500, height = 8, width = 12)
+ggsave(output_supp_figure, plot = supp_fig_gg, dpi = 500, height = 8, width = 12)
 
-supp_fig_3_gg
+supp_fig_gg

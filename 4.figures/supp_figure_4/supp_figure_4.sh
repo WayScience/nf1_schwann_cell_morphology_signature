@@ -8,5 +8,5 @@ conda activate nf1_figures
 # convert all notebooks to script files into the scripts folder
 jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
 
-# run notebooks to generate supplemental figure 2
-Rscript scripts/SuppFigure2_platemaps.r
+# run notebooks to generate supplemental figure
+Rscript scripts/SuppFigure4_platemaps.r
