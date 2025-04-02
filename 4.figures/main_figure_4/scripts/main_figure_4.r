@@ -15,7 +15,7 @@ results_dir <- file.path(
 )
 
 # Load data
-feat_import_file <- file.path(results_dir, "feature_importances.parquet")
+feat_import_file <- file.path(results_dir, "feature_importances_qc.parquet")
 
 feat_import_df <- arrow::read_parquet(feat_import_file)
 
@@ -95,9 +95,13 @@ top_feat_import_df <- top_feat_import_df %>%
 other_feature_group_df <- top_feat_import_df %>%
     dplyr::filter(!feature_group %in% c("AreaShape", "Correlation", "Neighbors", "Location"))
 
-# Create a new data frame for the red star in the Cytoplasm facet for Actin and RadialDistribution
-red_box_radial <- other_feature_group_df %>%
-    dplyr::filter(channel_cleaned == "Actin" & feature_group == "RadialDistribution" & compartment == "Cytoplasm")
+# Create a new data frame for the red box around the nuclei radial disbribution in the nuclei compartment
+red_box_nuclei_radial <- other_feature_group_df %>%
+    dplyr::filter(channel_cleaned == "Nucleus" & feature_group == "RadialDistribution" & compartment == "Nuclei")
+
+# Create a new data frame for the red box around the mito radial disbribution in the nuclei compartment
+red_box_mito_radial <- other_feature_group_df %>%
+    dplyr::filter(channel_cleaned == "Mito" & feature_group == "RadialDistribution" & compartment == "Nuclei")
 
 width <- 12
 height <- 6
@@ -106,21 +110,27 @@ options(repr.plot.width = width, repr.plot.height = height)
 # Create the plot with stars for Actin and RadialDistribution, and ER and Intensity in the Cytoplasm facet
 feature_importance_gg <- (
     ggplot(other_feature_group_df, aes(x = channel_cleaned, y = feature_group))
-    + geom_point(aes(fill = feature_importances), pch = 22, size = 22)
+    + geom_point(aes(fill = feature_importances), pch = 22, size = 24)
     + geom_text(aes(label = rounded_coeff), size = 6)
-    + geom_point(data = red_box_radial, 
-                aes(x = channel_cleaned, y = feature_group), 
-                color = "red", 
-                shape = 0, 
-                size = 20, 
-                stroke = 1.5) # Red box for Actin and RadialDistribution
+    + geom_point(data = red_box_nuclei_radial,
+                aes(x = channel_cleaned, y = feature_group),
+                color = "red",
+                shape = 0,
+                size = 22,
+                stroke = 1.5) # Red box for Nuclei and RadialDistribution
+    + geom_point(data = red_box_mito_radial,
+                aes(x = channel_cleaned, y = feature_group),
+                color = "red",
+                shape = 0,
+                size = 22,
+                stroke = 1.5) # Red box for Nuclei and RadialDistribution
     + facet_wrap("~compartment", ncol = 3)
     + theme_bw()
     + scale_fill_distiller(
         name = "Top abs value\ncoefficient",
         palette = "YlGn",
         direction = 1,
-        limits = c(0, 2.5)
+        limits = c(0, 4)
     )
     + xlab("Channel")
     + ylab("Feature group")
@@ -173,7 +183,7 @@ options(repr.plot.width = width, repr.plot.height = height)
 # Create the plot
 areashape_neighbors_importance_gg <- (
     ggplot(top_area_shape_neighbors_df, aes(x = feature_group, y = measurement))
-    + geom_point(aes(fill = feature_importances), pch = 22, size = 22)
+    + geom_point(aes(fill = feature_importances), pch = 22, size = 24)
     + geom_text(aes(label = rounded_coeff), size = 6)
     + facet_wrap("~compartment", ncol = 3)
     + theme_bw()
@@ -181,7 +191,7 @@ areashape_neighbors_importance_gg <- (
         name = "Top absolute\nvalue weight\nfrom model",
         palette = "YlGn",
         direction = 1,
-        limits = c(0, 2.5)
+        limits = c(0, 4)
     )
     + xlab("Feature group")
     + ylab("Measurement")
@@ -212,10 +222,6 @@ top_correlation_df <- correlation_df %>%
     dplyr::group_by(feature_group, channel_cleaned, compartment, channel, parameter1) %>%
     dplyr::slice_max(order_by = feature_importances, n = 1)
 
-# Create a new data frame for the red star in the Cytoplasm facet for Actin and RadialDistribution
-red_box_dapi_er_corr <- top_correlation_df %>%
-    dplyr::filter(channel_cleaned == "Nucleus" & parameter1_cleaned == "ER" & compartment == "Cells")
-
 width <- 12
 height <- 6
 options(repr.plot.width = width, repr.plot.height = height)
@@ -223,21 +229,15 @@ options(repr.plot.width = width, repr.plot.height = height)
 # Create the plot
 correlation_importance_gg <- (
     ggplot(top_correlation_df, aes(x = channel_cleaned, y = parameter1_cleaned))
-    + geom_point(aes(fill = feature_importances), pch = 22, size = 22)
+    + geom_point(aes(fill = feature_importances), pch = 22, size = 24)
     + geom_text(aes(label = rounded_coeff), size = 6)
-    + geom_point(data = red_box_dapi_er_corr, 
-                aes(x = channel_cleaned, y = parameter1_cleaned), 
-                color = "red", 
-                shape = 0, 
-                size = 18, 
-                stroke = 1.5) # Red box for Correlation DAPI and ER
     + facet_wrap("~compartment", ncol = 3)
     + theme_bw()
     + scale_fill_distiller(
         name = "Top absolute\nvalue weight\nfrom model",
         palette = "YlGn",
         direction = 1,
-        limits = c(0, 2.5)
+        limits = c(0, 4)
     )
     + xlab("Channel (correlation)")
     + ylab("Channel (correlation)")
@@ -260,7 +260,7 @@ coefficient_plot <- (
     areashape_neighbors_importance_gg /
     correlation_importance_gg /
     feature_importance_gg
-) + plot_layout(heights = c(1,1,1))
+) + plot_layout(heights = c(1,1,1.25))
 
 coefficient_plot
 

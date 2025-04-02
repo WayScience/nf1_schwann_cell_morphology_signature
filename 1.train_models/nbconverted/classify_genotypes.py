@@ -108,7 +108,7 @@ data_path.mkdir(parents=True, exist_ok=True)
 # ## Splitting and Processing
 # Functions to split and process data
 
-# In[ ]:
+# In[5]:
 
 
 gene_column = "Metadata_genotype"

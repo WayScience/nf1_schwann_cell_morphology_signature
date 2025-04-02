@@ -11,13 +11,19 @@ output_main_figure_2 <- file.path(
 
 # Path to UMAP results
 UMAP_results_dir <- file.path(
-    "../../../nf1_cellpainting_data/4.analyze_data/notebooks/UMAP/results/"
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/4.analyze_data/notebooks/UMAP/results/qc_profiles_results"
 )
 
 # Load data
-UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_concat_model_plates_sc_feature_selected.tsv")
+UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_concat_model_plates_sc_feature_selected_qc.tsv")
 
 UMAP_results_df <- readr::read_tsv(UMAP_results_file)
+
+# Update the Metadata_genotype column
+UMAP_results_df <- UMAP_results_df %>%
+  dplyr::mutate(Metadata_genotype = dplyr::recode(Metadata_genotype, 
+                                                  Null = "Null C04", 
+                                                  WT = "WT A3"))
 
 dim(UMAP_results_df)
 head(UMAP_results_df)
@@ -103,7 +109,7 @@ corr_results_dir <- file.path(
 )
 
 # Load data
-corr_results_file <- file.path(corr_results_dir, "well_agg_plate_genotype_correlations.parquet")
+corr_results_file <- file.path(corr_results_dir, "well_agg_plate_genotype_correlations_qc.parquet")
 
 corr_results_df <- arrow::read_parquet(corr_results_file)
 

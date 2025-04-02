@@ -22,7 +22,7 @@ import pandas as pd
 corr_results_dir = pathlib.Path("../../0.data_analysis/plate_correlation_analyses/construct_correlation_data")
 
 # Load data
-corr_results_file = corr_results_dir / "well_agg_plate_genotype_correlations.parquet"
+corr_results_file = corr_results_dir / "well_agg_plate_genotype_correlations_qc.parquet"
 corr_results_df = pd.read_parquet(corr_results_file)
 
 # Add a new column `same_genotype` to check if the correlation row is comparing between the same genotype

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Generate min/max repesentative single-cell images per top two Null features from the model
+# # Generate min/max representative single-cell images per top two features with highest coefficients  
 # 
-# 1. Average edge intensity of GFP in cytoplasm
-# 2. Radial distribution of RFP in cytoplasm
+# This is based on the absolute values of the coefficients.
 
 # ## Import libraries
 
@@ -140,8 +139,8 @@ images_dir = pathlib.Path(
 output_img_dir = pathlib.Path("./sc_crops")
 output_img_dir.mkdir(exist_ok=True)
 
-# Define the size of the cropping box (250x250 pixels)
-crop_size = 250
+# Define the size of the cropping box (NxN pixels)
+crop_size = 300
 
 # Define a mapping for the suffixes
 channel_mapping = {1: "DAPI", 2: "GFP", 3: "CY5", 4: "RFP"}
@@ -158,17 +157,17 @@ list_of_names = []
 # In[5]:
 
 
-# Load in normalized + feature selected data as data frame
+# Load in QC normalized + feature selected data as data frame
 plate5_df = pd.read_parquet(
     pathlib.Path(
-        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/Plate_5_sc_feature_selected.parquet"
+        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles/Plate_5_sc_feature_selected.parquet"
     )
 )
 
-# Load in annotated dataframe to extract neighbors
+# Load in QC annotated dataframe to extract neighbors
 annot_df = pd.read_parquet(
     pathlib.Path(
-        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/Plate_5_sc_annotated.parquet"
+        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles/Plate_5_sc_annotated.parquet"
     ),
     columns=[
         "Metadata_Well",
@@ -195,38 +194,42 @@ print(plate5_df.shape)
 plate5_df.head()
 
 
-# ## Load in feature importance data and determine the top two differential features for Null and WT
+# ## Load in feature importance data and determine the top two highest coefficients 
 # 
-# Top positive feature means the most important in predicting the WT genotype, most negative is most important in predicting Null genotype.
+# We will be creating image montages for the features with the highest coefficients, which both relate to being important for predicting WT genotype (positive values).
+# The third highest value (in terms of absolute value) is a feature that is most important for predicting Null genotype, but we do not montage it here.
+# 
+# **Note:** Top positive feature means the most important in predicting the WT genotype, most negative is most important in predicting Null genotype.
 
-# In[ ]:
+# In[6]:
 
 
+# Load in feature importances from QC model
 feat_import_df = pd.read_parquet(
     pathlib.Path(
-        "../../2.evaluate_model/model_evaluation_data/feature_importances.parquet"
+        "../../2.evaluate_model/model_evaluation_data/feature_importances_qc.parquet"
     )
 )
 
-# Find the top positive feature (predicting WT)
-correlation_feature = feat_import_df.sort_values(
+# Find the top highest coefficient feature (is positive to related to predicting WT)
+top_coeff_feature = feat_import_df.sort_values(
     by="feature_importances", ascending=False
 ).iloc[0]["feature_names"]
 
-# Find the top negative feature (predicting Null)
-radial_feature = feat_import_df.loc[
+# Find the second highest coefficient feature (is positive to related to predicting WT)
+second_top_coeff_feature = feat_import_df.sort_values(
+    by="feature_importances", ascending=False
+).iloc[1]["feature_names"]
+
+# Find the top negative feature (predicting Null) [NOT INCLUDED AS MONTAGE]
+top_Null_feature = feat_import_df.loc[
     feat_import_df["feature_importances"].idxmin(), "feature_names"
 ]
 
-# Find the second top negative feature (extra)
-intensity_feature = feat_import_df.sort_values(
-    by="feature_importances", ascending=True
-).iloc[1]["feature_names"]
-
 # Print the features
-print(correlation_feature)
-print(radial_feature)
-print(intensity_feature)
+print(top_coeff_feature)
+print(second_top_coeff_feature)
+print(top_Null_feature)
 
 
 # ## Filter plate 5 single-cells to only include isolated cells that are not near the edge of the FOV
@@ -253,46 +256,47 @@ print(filtered_plate5_df.shape)
 filtered_plate5_df.head()
 
 
-# ### Max single-cells for Correlation feature (represent WT)
+# ### Max single-cells for top highest feature
 
 # In[8]:
 
 
-# Get data frame with the next top 6 single-cells from the top WT coefficient
-max_corr_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "WT"
-].nlargest(18, correlation_feature).iloc[12:18][
-    [
-        correlation_feature,
-        "Metadata_genotype",
-        "Metadata_Well",
-        "Metadata_Plate",
-        "Metadata_Site",
-        "Metadata_Number_of_Cells_Neighbors_Adjacent",
-        "Metadata_Nuclei_Location_Center_X",
-        "Metadata_Nuclei_Location_Center_Y",
+# Get data frame with the next top 6 single-cells
+max_top_feature = (
+    filtered_plate5_df[filtered_plate5_df["Metadata_genotype"] == "WT"]
+    .nlargest(6, top_coeff_feature)[
+        [
+            top_coeff_feature,
+            "Metadata_genotype",
+            "Metadata_Well",
+            "Metadata_Plate",
+            "Metadata_Site",
+            "Metadata_Number_of_Cells_Neighbors_Adjacent",
+            "Metadata_Nuclei_Location_Center_X",
+            "Metadata_Nuclei_Location_Center_Y",
+        ]
     ]
-]
+)
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(max_corr_feature)
-list_of_names.append("max_corr_feature")
+list_of_dfs.append(max_top_feature)
+list_of_names.append("max_top_feature")
 
-print(max_corr_feature.shape)
-max_corr_feature
+print(max_top_feature.shape)
+max_top_feature
 
 
-# ### Min single-cells for Correlation feature (represent Null)
+# ### Min single-cells for top highest feature
 
 # In[9]:
 
 
 # Get data frame with the top 3 single-cells from the top WT coefficient
-min_corr_feature = filtered_plate5_df[
+min_top_feature = filtered_plate5_df[
     filtered_plate5_df["Metadata_genotype"] == "Null"
-].nsmallest(6, correlation_feature)[
+].nsmallest(6, top_coeff_feature)[
     [
-        correlation_feature,
+        top_coeff_feature,
         "Metadata_genotype",
         "Metadata_Well",
         "Metadata_Plate",
@@ -304,24 +308,24 @@ min_corr_feature = filtered_plate5_df[
 ]
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(min_corr_feature)
-list_of_names.append("min_corr_feature")
+list_of_dfs.append(min_top_feature)
+list_of_names.append("min_top_feature")
 
-print(min_corr_feature.shape)
-min_corr_feature
+print(min_top_feature.shape)
+min_top_feature
 
 
-# ### Max single-cells for Intensity feature (represent Null)
+# ### Max single-cells for the second highest feature
 
 # In[10]:
 
 
-# Get data frame with the top 3 single-cells from the second top Null coefficient
-max_int_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "Null"
-].nlargest(6, intensity_feature)[
+# Get data frame with the top 6 single-cells
+max_second_top_feature = filtered_plate5_df[
+    filtered_plate5_df["Metadata_genotype"] == "WT"
+].nlargest(6, second_top_coeff_feature)[
     [
-        intensity_feature,
+        second_top_coeff_feature,
         "Metadata_genotype",
         "Metadata_Well",
         "Metadata_Plate",
@@ -333,53 +337,24 @@ max_int_feature = filtered_plate5_df[
 ]
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(max_int_feature)
-list_of_names.append("max_int_feature")
+list_of_dfs.append(max_second_top_feature)
+list_of_names.append("max_second_top_feature")
 
-print(max_int_feature.shape)
-max_int_feature
+print(max_second_top_feature.shape)
+max_second_top_feature
 
 
-# ### Min single-cells for Intensity feature (represent WT)
+# ### Min single-cells for the second highest feature
 
 # In[11]:
 
 
 # Get data frame with the top 3 single-cells from the second top Null coefficient
-min_int_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "WT"
-].nsmallest(6, intensity_feature)[
-    [
-        intensity_feature,
-        "Metadata_genotype",
-        "Metadata_Well",
-        "Metadata_Plate",
-        "Metadata_Site",
-        "Metadata_Number_of_Cells_Neighbors_Adjacent",
-        "Metadata_Nuclei_Location_Center_X",
-        "Metadata_Nuclei_Location_Center_Y",
-    ]
-]
-
-# Append the DataFrame and its name to the lists
-list_of_dfs.append(min_int_feature)
-list_of_names.append("min_int_feature")
-
-print(min_int_feature.shape)
-min_int_feature
-
-
-# ### Max single-cells for Radial Distribution feature (represent Null)
-
-# In[12]:
-
-
-# Get data frame with the top 3 single-cells from the top Null coefficient
-max_radial_feature = filtered_plate5_df[
+min_second_top_feature = filtered_plate5_df[
     filtered_plate5_df["Metadata_genotype"] == "Null"
-].nlargest(6, radial_feature)[
+].nsmallest(6, second_top_coeff_feature)[
     [
-        radial_feature,
+        second_top_coeff_feature,
         "Metadata_genotype",
         "Metadata_Well",
         "Metadata_Plate",
@@ -391,45 +366,16 @@ max_radial_feature = filtered_plate5_df[
 ]
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(max_radial_feature)
-list_of_names.append("max_radial_feature")
+list_of_dfs.append(min_second_top_feature)
+list_of_names.append("min_second_top_feature")
 
-print(max_radial_feature.shape)
-max_radial_feature
-
-
-# ### Min single-cells for Radial Distribution feature (represent WT)
-
-# In[13]:
-
-
-# Get data frame with the top 3 single-cells from the top Null coefficient
-min_radial_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "WT"
-].nsmallest(6, radial_feature)[
-    [
-        radial_feature,
-        "Metadata_genotype",
-        "Metadata_Well",
-        "Metadata_Plate",
-        "Metadata_Site",
-        "Metadata_Number_of_Cells_Neighbors_Adjacent",
-        "Metadata_Nuclei_Location_Center_X",
-        "Metadata_Nuclei_Location_Center_Y",
-    ]
-]
-
-# Append the DataFrame and its name to the lists
-list_of_dfs.append(min_radial_feature)
-list_of_names.append("min_radial_feature")
-
-print(min_radial_feature.shape)
-min_radial_feature
+print(min_second_top_feature.shape)
+min_second_top_feature
 
 
 # ## Merge feature info into dictionary for processing
 
-# In[14]:
+# In[12]:
 
 
 sc_dict = create_sc_dict(dfs=list_of_dfs, names=list_of_names)
@@ -440,7 +386,7 @@ pprint(list(sc_dict.items())[:2], indent=4)
 
 # ## Generate single-cell crops 
 
-# In[15]:
+# In[13]:
 
 
 generate_sc_crops(

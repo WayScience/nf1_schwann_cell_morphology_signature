@@ -13,7 +13,7 @@ results_dir <- file.path(
 )
 
 # Load data (includes optimization in this file)
-PR_results_file <- file.path(results_dir, "precision_recall_final_model.parquet")
+PR_results_file <- file.path(results_dir, "precision_recall_final_qc_model.parquet")
 
 PR_results_df <- arrow::read_parquet(PR_results_file)
 
@@ -73,7 +73,7 @@ pr_all_plates_plot <- (
 pr_all_plates_plot
 
 # Load data
-metrics_results_file <- file.path(results_dir, "metrics_final_model.parquet")
+metrics_results_file <- file.path(results_dir, "metrics_final_qc_model.parquet")
 
 metrics_results_df <- arrow::read_parquet(metrics_results_file)
 
@@ -143,13 +143,24 @@ accuracy_score_all_plates_plot <- (
 accuracy_score_all_plates_plot
 
 # Load data
-CM_results_file <- file.path(results_dir, "confusion_matrix_final_model.parquet")
+CM_results_file <- file.path(results_dir, "confusion_matrix_final_qc_model.parquet")
 
 CM_results_df <- arrow::read_parquet(CM_results_file)
 
 # Filter out rows where datasplit is "val" or "shuffled_val"
 CM_results_df <- CM_results_df %>%
     filter(!(datasplit %in% c("val", "shuffled_val")))
+
+# Update the true_genotype and predicted_genotype columns
+CM_results_df <- CM_results_df %>%
+  dplyr::mutate(
+    true_genotype = dplyr::recode(true_genotype,
+                                  Null = "Null C04",
+                                  WT = "WT A3"),
+    predicted_genotype = dplyr::recode(predicted_genotype,
+                                      Null = "Null C04",
+                                      WT = "WT A3")
+  )
 
 dim(CM_results_df)
 head(CM_results_df)
@@ -207,7 +218,7 @@ confusion_matrix_all_plates_plot <- (
     theme(
         strip.text = element_text(size = 16),
         # x and y axis text size
-        axis.text.x = element_text(size = 20),
+        axis.text.x = element_text(size = 20, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 20),
         # x and y axis title size
         axis.title.x = element_text(size = 22),
@@ -232,4 +243,4 @@ fig_3_gg <- (
 ) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 25))
 
 # Save the plot
-ggsave(output_main_figure_3, plot = fig_3_gg, dpi = 500, height = 6, width = 22)
+ggsave(output_main_figure_3, plot = fig_3_gg, dpi = 500, height = 6.5, width = 22)

@@ -19,7 +19,7 @@ platemap_df <- read.csv(
 
 # Path to UMAP results
 UMAP_results_dir <- file.path(
-    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/4.analyze_data/notebooks/UMAP/results"
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/4.analyze_data/notebooks/UMAP/results/qc_profiles_results"
 )
 
 # Subset the data frame and rename columns
@@ -27,7 +27,7 @@ platemap_df_filtered <- platemap_df[, c("well_position", "Institution")]
 colnames(platemap_df_filtered) <- c("Metadata_Well", "Metadata_Institution")
 
 # Load data
-UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_Plate_6_sc_only_model_features.tsv")
+UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_Plate_6_sc_only_model_features_qc.tsv")
 
 UMAP_results_df <- readr::read_tsv(UMAP_results_file)
 
@@ -36,7 +36,18 @@ UMAP_results_df <- platemap_df_filtered %>% inner_join(UMAP_results_df, by = "Me
 
 # Add new column for cell line derivative
 UMAP_results_df <- UMAP_results_df %>%
-    mutate(cell_line_derivative = ifelse(Metadata_Institution == "iNFixion", "original", ifelse(Metadata_Institution == "MGH", "derivative", NA)))
+    mutate(cell_line_derivative = ifelse(Metadata_Institution == "iNFixion", "original", 
+        ifelse(Metadata_Institution == "MGH", "derivative", NA)))
+
+# Add new column for cell line code
+UMAP_results_df <- UMAP_results_df %>%
+    mutate(cell_line_code = case_when(
+        Metadata_Institution == "iNFixion" & Metadata_genotype == "Null" ~ "C04",
+        Metadata_Institution == "iNFixion" & Metadata_genotype == "WT" ~ "A3",
+        Metadata_Institution == "MGH" & Metadata_genotype == "WT" ~ "GFP 3",
+        Metadata_Institution == "MGH" & Metadata_genotype == "Null" ~ "C23",
+        TRUE ~ NA_character_
+    ))
 
 dim(UMAP_results_df)
 head(UMAP_results_df)
@@ -46,41 +57,41 @@ height <- 10
 options(repr.plot.width = width, repr.plot.height = height)
 
 umap_fig_gg <- (
-    ggplot(UMAP_results_df, aes(x = UMAP0, y = UMAP1))
-    + geom_point(
-            aes(color = Metadata_genotype),
-            size = 1.0,
-            alpha = 0.4
-    )
-    + theme_bw()
-    + guides(
-            color = guide_legend(
-                    override.aes = list(size = 5)
-            )
-    )
-    + labs(x = "UMAP0", y = "UMAP1", color = "NF1\ngenotype")
-    + facet_grid(factor(cell_line_derivative, levels = c("original", "derivative")) ~ ., 
-           labeller = labeller(.rows = function(x) paste("ipn02.3 2λ:", x)))
-    + coord_fixed(ratio = 0.52)
-    # change the text size
-    + theme(
-            strip.text = element_text(size = 17),
-            # x and y axis text size
-            axis.text.x = element_text(size = 22),
-            axis.text.y = element_text(size = 22),
-            # x and y axis title size
-            axis.title.x = element_text(size = 22),
-            axis.title.y = element_text(size = 22),
-            # legend text size
-            legend.text = element_text(size = 20),
-            legend.title = element_text(size = 22)
-    )
+        ggplot(UMAP_results_df, aes(x = UMAP0, y = UMAP1))
+        + geom_point(
+                        aes(color = Metadata_genotype),
+                        size = 1.0,
+                        alpha = 0.4
+        )
+        + theme_bw()
+        + guides(
+                        color = guide_legend(
+                                        override.aes = list(size = 5)
+                        )
+        )
+        + labs(x = "UMAP0", y = "UMAP1", color = "NF1\ngenotype")
+        + facet_wrap(~ factor(cell_line_code), 
+                   labeller = labeller(.default = function(x) paste("Cell line code:", x)))
+        + coord_fixed(ratio = 1.0)
+        # change the text size
+        + theme(
+                        strip.text = element_text(size = 17),
+                        # x and y axis text size
+                        axis.text.x = element_text(size = 22),
+                        axis.text.y = element_text(size = 22),
+                        # x and y axis title size
+                        axis.title.x = element_text(size = 22),
+                        axis.title.y = element_text(size = 22),
+                        # legend text size
+                        legend.text = element_text(size = 20),
+                        legend.title = element_text(size = 22)
+        )
 )
 
 umap_fig_gg
 
 # Load data (includes optimization in this file)
-PR_results_file <- file.path(results_dir, "plate6_precision_recall_final_model.parquet")
+PR_results_file <- file.path(results_dir, "plate6_precision_recall_final_model_qc.parquet")
 
 PR_results_df <- arrow::read_parquet(PR_results_file)
 
@@ -130,7 +141,7 @@ pr_curve_plot <- (
 pr_curve_plot
 
 # Load data
-accuracy_results_file <- file.path(results_dir, "plate6_accuracy_final_model.parquet")
+accuracy_results_file <- file.path(results_dir, "plate6_accuracy_final_model_qc.parquet")
 
 accuracy_results_df <- arrow::read_parquet(accuracy_results_file)
 
@@ -189,7 +200,7 @@ accuracy_score_plot <- (
 accuracy_score_plot
 
 # Load data
-kstest_results_file <- file.path("../../3.assess_generalizability/results/ks_test_derivatives_results.parquet")
+kstest_results_file <- file.path("../../3.assess_generalizability/results/ks_test_derivatives_results_qc.parquet")
 
 kstest_results_df <- arrow::read_parquet(kstest_results_file)
 
@@ -229,7 +240,7 @@ ks_test_scatter <- (
     + theme(
         axis.text.x = element_blank(),
         axis.text.y = element_text(size = 23),
-        axis.title.x = element_blank(),
+        axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 22),
         legend.text = element_text(size = 20),
         legend.title = element_text(size = 22),
@@ -242,7 +253,7 @@ ks_test_scatter <- (
     + scale_size_continuous(name = "Feature\nimportance", range = c(1, 8)) 
     + scale_shape_manual(name = "Organelle", values = c(16, 17, 15, 18, 7))
     + labs(
-        x = "CellProfiler feature",
+        x = "Rank of summed KS statistic per core feature group\n(summed across compartments)",
         y = "KS test statistic"
     )
     + guides(
@@ -257,9 +268,17 @@ ks_test_scatter
 platemap_df <- platemap_df %>%
     filter(genotype != "HET")
 
-# Add new column for cell line derivative
+# Add new column for cell line code
 platemap_df <- platemap_df %>%
-    mutate(cell_line_derivative = factor(ifelse(Institution == "iNFixion", "original", ifelse(Institution == "MGH", "derivative", NA))))
+    mutate(cell_line_code = case_when(
+        Institution == "iNFixion" & genotype == "Null" ~ "C04",
+        Institution == "iNFixion" & genotype == "WT" ~ "A3",
+        Institution == "MGH" & genotype == "WT" ~ "GFP 3",
+        Institution == "MGH" & genotype == "Null" ~ "C23",
+        TRUE ~ NA_character_
+    ))
+
+head(platemap_df)
 
 width <- 10
 height <- 8
@@ -275,8 +294,8 @@ platemap <-
     ) +
     coord_fixed(ratio = 1.0) +
     ggplot2::scale_fill_discrete(name = "NF1\ngenotype") +
-    ggplot2::geom_point(aes(shape = platemap_df$cell_line_derivative), size= 3) +
-    ggplot2::scale_shape_discrete(name = "ipn02.3 2λ") +
+    ggplot2::geom_point(aes(shape = platemap_df$cell_line_code), size= 3) +
+    ggplot2::scale_shape_discrete(name = "Cell line\ncode") +
     theme(
         legend.title = element_text(size = 22),  # Larger legend title
         legend.text = element_text(size = 20),  # Larger legend text

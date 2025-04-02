@@ -71,12 +71,12 @@ options(repr.plot.width = width, repr.plot.height = height)
 # ggplot of just text for each genotype
 wt_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "WT (NF1 +/+)"), size = text_size, angle = 90) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "WT A3\n(NF1 +/+)"), size = text_size, angle = 90) 
     + theme_void()
 )
 null_text <- (
     ggplot()
-    + geom_text(aes(x = 0.5, y = 0.5, label = "Null (NF1 -/-)"), size = text_size, angle = 90) 
+    + geom_text(aes(x = 0.5, y = 0.5, label = "Null C04\n(NF1 -/-)"), size = text_size, angle = 90) 
     + theme_void()
 )
 

@@ -73,7 +73,7 @@ le = load(f"{data_path}/trained_nf1_model_label_encoder{suffix}.joblib")
 # In[4]:
 
 
-evaldf
+evaldf.head()
 
 
 # ### Outputs
