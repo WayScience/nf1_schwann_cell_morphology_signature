@@ -5,6 +5,7 @@
 # 
 # In this method, we have trained two models; one with QC'd data and the other without QC'd data (more noise). 
 # We apply the models to their respective holdout (`Plate_6`) dataset (e.g., QC'd model applied to QC'd data and no-QC model applied to no QC dataset).
+# We filter the Plate 6 dataset to only include the Null and WT cells from the iNFixion cell lines (Null C04 and WT A3), so we are directly comparing the models trained on that specific cell line.
 # We use bootstrapping, a method that repeatedly samples the dataset with replacement to create random subsets of the same size, where some cells might be duplicated or excluded, simulating variations in the population.
 # We calculate the ROC AUC for each subsample and plot as a histogram.
 # 
@@ -75,6 +76,9 @@ plate_6_no_QC = pd.read_parquet(
 # and would not contribute to the evaluation
 plate_6_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_genotype"] != "HET"]
 
+# Drop rows where Metadata_Institution is MGH
+plate_6_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_Institution"] != "MGH"]
+
 print(plate_6_no_QC.shape[0])
 
 # Drop rows with any NaNs prior to getting X and y data
@@ -114,7 +118,10 @@ plate_6_QC = pd.read_parquet(
 # and would not contribute to the evaluation
 plate_6_QC = plate_6_QC[plate_6_QC["Metadata_genotype"] != "HET"]
 
-print(plate_6_no_QC.shape[0])
+# Drop rows where Metadata_Institution is MGH
+plate_6_QC = plate_6_QC[plate_6_QC["Metadata_Institution"] != "MGH"]
+
+print(plate_6_QC.shape[0])
 
 # Drop rows with any NaNs prior to getting X and y data
 plate_6_QC = plate_6_QC.dropna()
