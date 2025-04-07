@@ -237,7 +237,7 @@ ks_test_scatter <- (
     ggplot(kstest_results_df, aes(x = feature_base, y = ks_stat))
     + geom_point(aes(color = feature_group, size = feature_importances, shape = channel), alpha = 0.4) 
     + theme_bw()
-    + facet_grid(compartment ~ .)
+    + facet_grid(compartment ~ genotype_comparison)
     + theme(
         axis.text.x = element_blank(),
         axis.text.y = element_text(size = 23),
@@ -342,8 +342,8 @@ platemap_umap <- (
 
 platemap_umap
 
-height <- 12
-width <- 25
+height <- 16
+width <- 32
 options(repr.plot.width = width, repr.plot.height = height)
 
 align_plot <- (

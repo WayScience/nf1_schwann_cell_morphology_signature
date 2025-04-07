@@ -76,25 +76,24 @@ plate_6_no_QC = pd.read_parquet(
 # and would not contribute to the evaluation
 plate_6_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_genotype"] != "HET"]
 
-# Drop rows where Metadata_Institution is MGH
-plate_6_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_Institution"] != "MGH"]
-
-print(plate_6_no_QC.shape[0])
-
-# Drop rows with any NaNs prior to getting X and y data
+# Drop rows with any NaNs prior to splitting and getting X and y data
 plate_6_no_QC = plate_6_no_QC.dropna()
 
-# Get the X data from the holdout data
-X = plate_6_no_QC[no_QC_model.feature_names_in_]
+# Split by institution
+plate_MGH_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_Institution"] == "MGH"]
+plate_iNFixion_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_Institution"] == "iNFixion"]
 
-# Load in y data from dataset
-y = plate_6_no_QC["Metadata_genotype"]
+# Get X and y for MGH
+X_MGH_noQC = plate_MGH_no_QC[no_QC_model.feature_names_in_]
+y_MGH_noQC = le.transform(plate_MGH_no_QC["Metadata_genotype"])
 
-# Assign y classes to correct binary using label encoder results
-y_binary_no_QC = le.transform(y)
+# Get X and y for iNFixion
+X_iNFixion_noQC = plate_iNFixion_no_QC[no_QC_model.feature_names_in_]
+y_iNFixion_noQC = le.transform(plate_iNFixion_no_QC["Metadata_genotype"])
 
 # Predict probabilities for the positive class
-y_probs_modelNoQC = no_QC_model.predict_proba(X)[:, 1]
+y_probs_MGH_modelNoQC = no_QC_model.predict_proba(X_MGH_noQC)[:, 1]
+y_probs_iNFixion_modelNoQC = no_QC_model.predict_proba(X_iNFixion_noQC)[:, 1]
 
 
 # ## Extract probabilities from the QC model applied to the QC'd holdout plate
@@ -118,82 +117,105 @@ plate_6_QC = pd.read_parquet(
 # and would not contribute to the evaluation
 plate_6_QC = plate_6_QC[plate_6_QC["Metadata_genotype"] != "HET"]
 
-# Drop rows where Metadata_Institution is MGH
-plate_6_QC = plate_6_QC[plate_6_QC["Metadata_Institution"] != "MGH"]
-
-print(plate_6_QC.shape[0])
-
-# Drop rows with any NaNs prior to getting X and y data
+# Drop rows with any NaNs prior to splitting and getting X and y data
 plate_6_QC = plate_6_QC.dropna()
 
-# Get the X data from the holdout data
-X = plate_6_QC[QC_model.feature_names_in_]
+# Split by institution
+plate_MGH_QC = plate_6_QC[plate_6_QC["Metadata_Institution"] == "MGH"]
+plate_iNFixion_QC = plate_6_QC[plate_6_QC["Metadata_Institution"] == "iNFixion"]
 
-# Load in y data from dataset
-y = plate_6_QC["Metadata_genotype"]
+# Get X and y for MGH
+X_MGH_QC = plate_MGH_QC[QC_model.feature_names_in_]
+y_MGH_QC = le.transform(plate_MGH_QC["Metadata_genotype"])
 
-# Assign y classes to correct binary using label encoder results
-y_binary_QC = le.transform(y)
+# Get X and y for iNFixion
+X_iNFixion_QC = plate_iNFixion_QC[QC_model.feature_names_in_]
+y_iNFixion_QC = le.transform(plate_iNFixion_QC["Metadata_genotype"])
 
 # Predict probabilities for the positive class
-y_probs_modelQC = QC_model.predict_proba(X)[:, 1]
+y_probs_MGH_modelQC = QC_model.predict_proba(X_MGH_QC)[:, 1]
+y_probs_iNFixion_modelQC = QC_model.predict_proba(X_iNFixion_QC)[:, 1]
 
 
-# ## Calculate ROC AUC score from the QC and no QC model and data
+# ## Calculate ROC AUC score from the QC and no QC model and data per cell line
 
 # In[6]:
 
 
-# Calculate ROC AUC
-aucNoQC = roc_auc_score(y_binary_no_QC, y_probs_modelNoQC)
-aucQC = roc_auc_score(y_binary_QC, y_probs_modelQC)
+# Calculate ROC AUC for the iNFixion cell line
+aucNoQC_iNFixion = roc_auc_score(y_iNFixion_noQC, y_probs_iNFixion_modelNoQC)
+aucQC_iNFixion = roc_auc_score(y_iNFixion_QC, y_probs_iNFixion_modelQC)
 
-print(f"AUC Model 1: {aucNoQC}")
-print(f"AUC Model 2: {aucQC}")
+print(f"AUC Model 1: {aucNoQC_iNFixion}")
+print(f"AUC Model 2: {aucQC_iNFixion}")
 
-
-# ## Perform ROC AUC bootstrapping method for both QC and no QC models and data
 
 # In[7]:
 
 
-# No QC model
-scores_model1 = bootstrap_roc_auc(y_binary_no_QC, y_probs_modelNoQC)
+# Calculate ROC AUC for the MGH cell line
+aucNoQC_MGH = roc_auc_score(y_MGH_noQC, y_probs_MGH_modelNoQC)
+aucQC_MGH = roc_auc_score(y_MGH_QC, y_probs_MGH_modelQC)
 
-# QC model
-scores_model2 = bootstrap_roc_auc(y_binary_QC, y_probs_modelQC)
+print(f"AUC Model 1: {aucNoQC_MGH}")
+print(f"AUC Model 2: {aucQC_MGH}")
 
-# Compare distributions
-t_stat, p_value = ttest_ind(scores_model1, scores_model2)
-print(f"T-statistic: {t_stat}, P-value: {p_value}")
 
+# ## Perform ROC AUC bootstrapping method for both QC and no QC models and data
 
 # In[8]:
 
 
-print(f"Mean ROC AUC for Model No-QC: {np.mean(scores_model1)}")
-print(f"Mean ROC AUC for Model QC: {np.mean(scores_model2)}")
+# No QC model iNFixion cell line
+scores_model1_iNFixion = bootstrap_roc_auc(y_iNFixion_noQC, y_probs_iNFixion_modelNoQC)
+
+# QC model iNFixion cell line
+scores_model2_iNFixion = bootstrap_roc_auc(y_iNFixion_QC, y_probs_iNFixion_modelQC)
+
+# Compare distributions
+t_stat, p_value = ttest_ind(scores_model1_iNFixion, scores_model2_iNFixion)
+print(f"T-statistic: {t_stat}, P-value: {p_value}")
+print(f"Mean ROC AUC for Model No-QC for iNFixion cell line: {np.mean(scores_model1_iNFixion)}")
+print(f"Mean ROC AUC for Model QC for iNFixion cell line: {np.mean(scores_model2_iNFixion)}")
 
 
 # In[9]:
+
+
+# No QC model for MGH cell line
+scores_model1_MGH = bootstrap_roc_auc(y_MGH_noQC, y_probs_MGH_modelNoQC)
+
+# QC model for MGH cell line
+scores_model2_MGH = bootstrap_roc_auc(y_MGH_QC, y_probs_MGH_modelQC)
+
+# Compare distributions
+t_stat, p_value = ttest_ind(scores_model1_MGH, scores_model2_MGH)
+print(f"T-statistic: {t_stat}, P-value: {p_value}")
+print(f"Mean ROC AUC for Model No-QC: {np.mean(scores_model1_MGH)}")
+print(f"Mean ROC AUC for Model QC: {np.mean(scores_model2_MGH)}")
+
+
+# ## Generate plot comparing QC and no QC model on the iNFixion cell lines
+
+# In[10]:
 
 
 # Define darker colors for the mean lines
 darker_teal = mcolors.to_rgba("teal", 0.8)
 darker_orchid = mcolors.to_rgba("orchid", 0.8)
 
-plt.hist(scores_model1, bins=50, alpha=0.5, label="Model No-QC", color="teal")
-plt.hist(scores_model2, bins=50, alpha=0.5, label="Model QC", color="orchid")
+plt.hist(scores_model1_iNFixion, bins=50, alpha=0.5, label="Model No-QC", color="teal")
+plt.hist(scores_model2_iNFixion, bins=50, alpha=0.5, label="Model QC", color="orchid")
 
 # Add vertical lines for the means
 plt.axvline(
-    np.mean(scores_model1),
+    np.mean(scores_model1_iNFixion),
     color=darker_teal,
     linestyle="dashed",
     linewidth=2,
 )
 plt.axvline(
-    np.mean(scores_model2),
+    np.mean(scores_model2_iNFixion),
     color=darker_orchid,
     linestyle="dashed",
     linewidth=2,
@@ -211,7 +233,50 @@ plt.grid(True, linestyle="--", alpha=0.6)
 plt.tight_layout()
 
 # save figure
-plt.savefig(f"{figure_path}/bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
+plt.savefig(f"{figure_path}/iNFixion_bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
+
+plt.show()
+
+
+# ## Generate plot comparing QC and no QC model on the MGH cell lines
+
+# In[11]:
+
+
+# Define darker colors for the mean lines
+darker_teal = mcolors.to_rgba("teal", 0.8)
+darker_orchid = mcolors.to_rgba("orchid", 0.8)
+
+plt.hist(scores_model1_MGH, bins=50, alpha=0.5, label="Model No-QC", color="teal")
+plt.hist(scores_model2_MGH, bins=50, alpha=0.5, label="Model QC", color="orchid")
+
+# Add vertical lines for the means
+plt.axvline(
+    np.mean(scores_model1_MGH),
+    color=darker_teal,
+    linestyle="dashed",
+    linewidth=2,
+)
+plt.axvline(
+    np.mean(scores_model2_MGH),
+    color=darker_orchid,
+    linestyle="dashed",
+    linewidth=2,
+)
+
+plt.legend(loc="upper left", fontsize=10)
+plt.xlabel("ROC AUC Score", fontsize=12)
+plt.ylabel("Frequency", fontsize=12)
+plt.title(
+    "Bootstrap ROC AUC Distributions For\nQC versus No QC Data",
+    fontsize=14,
+    fontweight="bold",
+)
+plt.grid(True, linestyle="--", alpha=0.6)
+plt.tight_layout()
+
+# save figure
+plt.savefig(f"{figure_path}/MGH_bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
 
 plt.show()
 

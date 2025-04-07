@@ -70,24 +70,30 @@ plate_6_norm = pd.read_parquet(
 # In[4]:
 
 
-# Split data by institution for comparison
-institution_1_norm = plate_6_norm[plate_6_norm["Metadata_Institution"] == "iNFixion"]
-institution_2_norm = plate_6_norm[plate_6_norm["Metadata_Institution"] == "MGH"]
+# Split data by institution and WT genotype for comparison
+institution_WT_1_norm = plate_6_norm[
+    (plate_6_norm["Metadata_Institution"] == "iNFixion") & 
+    (plate_6_norm["Metadata_genotype"] == "WT")
+]
+institution_WT_2_norm = plate_6_norm[
+    (plate_6_norm["Metadata_Institution"] == "MGH") & 
+    (plate_6_norm["Metadata_genotype"] == "WT")
+]
 
-# Perform KS-test for each feature
-ks_test_results_norm = {}
+# Perform KS-test for each feature for the WT genotype
+WT_ks_test_results_norm = {}
 
 for column in plate_6_norm.columns:
     if column.startswith("Metadata_"):
         continue
     ks_stat, p_value = stats.kstest(
-        institution_1_norm[column], institution_2_norm[column]
+        institution_WT_1_norm[column], institution_WT_2_norm[column]
     )
-    ks_test_results_norm[column] = {"ks_stat": ks_stat, "p_value": p_value}
+    WT_ks_test_results_norm[column] = {"ks_stat": ks_stat, "p_value": p_value}
 
 # Convert results to DataFrame for better visualization
-ks_test_results_norm_df = (
-    pd.DataFrame(ks_test_results_norm)
+WT_ks_test_results_norm_df = (
+    pd.DataFrame(WT_ks_test_results_norm)
     .T.reset_index()
     .rename(columns={"index": "feature"})
 )
@@ -96,20 +102,71 @@ ks_test_results_norm_df = (
 # In[5]:
 
 
-print("\nKS-test results for normalized data:")
-ks_test_results_norm_df.head()
+# Split data by institution and Null genotype for comparison
+institution_Null_1_norm = plate_6_norm[
+    (plate_6_norm["Metadata_Institution"] == "iNFixion") & 
+    (plate_6_norm["Metadata_genotype"] == "Null")
+]
+institution_Null_2_norm = plate_6_norm[
+    (plate_6_norm["Metadata_Institution"] == "MGH") & 
+    (plate_6_norm["Metadata_genotype"] == "Null")
+]
 
+# Perform KS-test for each feature for the Null genotype
+Null_ks_test_results_norm = {}
 
-# ## Add absolute value coefficients per feature to the results
+for column in plate_6_norm.columns:
+    if column.startswith("Metadata_"):
+        continue
+    ks_stat, p_value = stats.kstest(
+        institution_Null_1_norm[column], institution_Null_2_norm[column]
+    )
+    Null_ks_test_results_norm[column] = {"ks_stat": ks_stat, "p_value": p_value}
+
+# Convert results to DataFrame for better visualization
+Null_ks_test_results_norm_df = (
+    pd.DataFrame(Null_ks_test_results_norm)
+    .T.reset_index()
+    .rename(columns={"index": "feature"})
+)
+
 
 # In[6]:
 
 
-feat_import_df = pd.read_parquet(
-    pathlib.Path(
-        "../2.evaluate_model/model_evaluation_data/feature_importances.parquet"
+# Add genotype column to each KS-test results DataFrame
+WT_ks_test_results_norm_df["genotype_comparison"] = "WT"
+Null_ks_test_results_norm_df["genotype_comparison"] = "Null"
+
+# Combine the two DataFrames
+ks_test_results_norm_df = pd.concat([WT_ks_test_results_norm_df, Null_ks_test_results_norm_df], ignore_index=True)
+
+# Print the combined results
+print("\nKS-test results for normalized data:")
+print(ks_test_results_norm_df.shape)
+ks_test_results_norm_df.head()
+
+
+# ## Add absolute value coefficients per feature from the model to the results (filtering down the data to only the features in the model)
+
+# In[7]:
+
+
+if data_type == "cleaned":
+    # Load in the feature importance data from the QC model
+    feat_import_df = pd.read_parquet(
+        pathlib.Path(
+            "../2.evaluate_model/model_evaluation_data/feature_importances_qc.parquet"
+        )
     )
-)
+else:
+    # Load in the feature importance data from non-QC model
+    feat_import_df = pd.read_parquet(
+        pathlib.Path(
+            "../2.evaluate_model/model_evaluation_data/feature_importances.parquet"
+        )
+    )
+print("Number of features in model:", feat_import_df.shape[0])
 
 # Take the absolute value of the feature importance
 feat_import_df["feature_importances"] = feat_import_df["feature_importances"].abs()
@@ -120,12 +177,13 @@ feat_import_df = feat_import_df.rename(columns={"feature_names": "feature"})
 # Merge the feature importance data with the KS test results
 ks_test_results_norm_df = ks_test_results_norm_df.merge(feat_import_df, on="feature")
 
+print(ks_test_results_norm_df.shape)
 ks_test_results_norm_df.head()
 
 
 # ## Split feature names into parts and save results
 
-# In[7]:
+# In[8]:
 
 
 # Split the feature column into parts
@@ -144,11 +202,6 @@ ks_test_results_norm_df[
     .str.split("_", expand=True)
     .reindex(columns=range(7), fill_value=pd.NA)
 )
-
-# Filter out features not in model_features
-ks_test_results_norm_df = ks_test_results_norm_df[
-    ks_test_results_norm_df["feature"].isin(model_features)
-]
 
 # Save the results with qc suffix if data is cleaned
 if data_type == "cleaned":
@@ -169,7 +222,7 @@ ks_test_results_norm_df.head()
 
 # ## Print rows from the top five feature importances
 
-# In[8]:
+# In[9]:
 
 
 ks_test_results_norm_df = ks_test_results_norm_df.sort_values(
