@@ -57,7 +57,7 @@ print(label_mapping)
 
 # ## Extract probabilities from the no QC model applied to the no QC'd holdout plate
 
-# In[4]:
+# In[ ]:
 
 
 # Load the trained model
@@ -81,7 +81,9 @@ plate_6_no_QC = plate_6_no_QC.dropna()
 
 # Split by institution
 plate_MGH_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_Institution"] == "MGH"]
-plate_iNFixion_no_QC = plate_6_no_QC[plate_6_no_QC["Metadata_Institution"] == "iNFixion"]
+plate_iNFixion_no_QC = plate_6_no_QC[
+    plate_6_no_QC["Metadata_Institution"] == "iNFixion"
+]
 
 # Get X and y for MGH
 X_MGH_noQC = plate_MGH_no_QC[no_QC_model.feature_names_in_]
@@ -163,7 +165,7 @@ print(f"AUC Model 2: {aucQC_MGH}")
 
 # ## Perform ROC AUC bootstrapping method for both QC and no QC models and data
 
-# In[8]:
+# In[ ]:
 
 
 # No QC model iNFixion cell line
@@ -175,8 +177,12 @@ scores_model2_iNFixion = bootstrap_roc_auc(y_iNFixion_QC, y_probs_iNFixion_model
 # Compare distributions
 t_stat, p_value = ttest_ind(scores_model1_iNFixion, scores_model2_iNFixion)
 print(f"T-statistic: {t_stat}, P-value: {p_value}")
-print(f"Mean ROC AUC for Model No-QC for iNFixion cell line: {np.mean(scores_model1_iNFixion)}")
-print(f"Mean ROC AUC for Model QC for iNFixion cell line: {np.mean(scores_model2_iNFixion)}")
+print(
+    f"Mean ROC AUC for Model No-QC for iNFixion cell line: {np.mean(scores_model1_iNFixion)}"
+)
+print(
+    f"Mean ROC AUC for Model QC for iNFixion cell line: {np.mean(scores_model2_iNFixion)}"
+)
 
 
 # In[9]:

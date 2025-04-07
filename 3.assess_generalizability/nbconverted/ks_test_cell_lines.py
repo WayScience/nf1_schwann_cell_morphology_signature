@@ -67,17 +67,17 @@ plate_6_norm = pd.read_parquet(
 
 # ## Perform KS-test comparing the features between the two cell line derivatives
 
-# In[4]:
+# In[ ]:
 
 
 # Split data by institution and WT genotype for comparison
 institution_WT_1_norm = plate_6_norm[
-    (plate_6_norm["Metadata_Institution"] == "iNFixion") & 
-    (plate_6_norm["Metadata_genotype"] == "WT")
+    (plate_6_norm["Metadata_Institution"] == "iNFixion")
+    & (plate_6_norm["Metadata_genotype"] == "WT")
 ]
 institution_WT_2_norm = plate_6_norm[
-    (plate_6_norm["Metadata_Institution"] == "MGH") & 
-    (plate_6_norm["Metadata_genotype"] == "WT")
+    (plate_6_norm["Metadata_Institution"] == "MGH")
+    & (plate_6_norm["Metadata_genotype"] == "WT")
 ]
 
 # Perform KS-test for each feature for the WT genotype
@@ -99,17 +99,17 @@ WT_ks_test_results_norm_df = (
 )
 
 
-# In[5]:
+# In[ ]:
 
 
 # Split data by institution and Null genotype for comparison
 institution_Null_1_norm = plate_6_norm[
-    (plate_6_norm["Metadata_Institution"] == "iNFixion") & 
-    (plate_6_norm["Metadata_genotype"] == "Null")
+    (plate_6_norm["Metadata_Institution"] == "iNFixion")
+    & (plate_6_norm["Metadata_genotype"] == "Null")
 ]
 institution_Null_2_norm = plate_6_norm[
-    (plate_6_norm["Metadata_Institution"] == "MGH") & 
-    (plate_6_norm["Metadata_genotype"] == "Null")
+    (plate_6_norm["Metadata_Institution"] == "MGH")
+    & (plate_6_norm["Metadata_genotype"] == "Null")
 ]
 
 # Perform KS-test for each feature for the Null genotype
@@ -131,7 +131,7 @@ Null_ks_test_results_norm_df = (
 )
 
 
-# In[6]:
+# In[ ]:
 
 
 # Add genotype column to each KS-test results DataFrame
@@ -139,7 +139,9 @@ WT_ks_test_results_norm_df["genotype_comparison"] = "WT"
 Null_ks_test_results_norm_df["genotype_comparison"] = "Null"
 
 # Combine the two DataFrames
-ks_test_results_norm_df = pd.concat([WT_ks_test_results_norm_df, Null_ks_test_results_norm_df], ignore_index=True)
+ks_test_results_norm_df = pd.concat(
+    [WT_ks_test_results_norm_df, Null_ks_test_results_norm_df], ignore_index=True
+)
 
 # Print the combined results
 print("\nKS-test results for normalized data:")
