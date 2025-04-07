@@ -205,6 +205,10 @@ kstest_results_file <- file.path("../../3.assess_generalizability/results/ks_tes
 
 kstest_results_df <- arrow::read_parquet(kstest_results_file)
 
+# Filter for genotype_comparison == "All"
+kstest_results_df <- kstest_results_df %>%
+    filter(genotype_comparison == "All")
+
 # Create a new column extracting the first part of 'feature' after the compartment
 kstest_results_df$feature_base <- sub("^[^_]+_", "", kstest_results_df$feature)
 
@@ -237,7 +241,7 @@ ks_test_scatter <- (
     ggplot(kstest_results_df, aes(x = feature_base, y = ks_stat))
     + geom_point(aes(color = feature_group, size = feature_importances, shape = channel), alpha = 0.4) 
     + theme_bw()
-    + facet_grid(compartment ~ genotype_comparison)
+    + facet_grid(compartment ~ .)
     + theme(
         axis.text.x = element_blank(),
         axis.text.y = element_text(size = 23),
@@ -342,8 +346,8 @@ platemap_umap <- (
 
 platemap_umap
 
-height <- 16
-width <- 32
+height <- 12
+width <- 25
 options(repr.plot.width = width, repr.plot.height = height)
 
 align_plot <- (

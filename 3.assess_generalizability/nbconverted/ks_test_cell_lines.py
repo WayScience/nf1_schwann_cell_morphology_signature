@@ -65,9 +65,35 @@ plate_6_norm = pd.read_parquet(
 )
 
 
-# ## Perform KS-test comparing the features between the two cell line derivatives
+# ## Perform KS-test comparing the features between the two cell line derivatives for all genotypes and between genotypes
 
-# In[ ]:
+# In[4]:
+
+
+# Split data by institution for comparison
+institution_1_norm = plate_6_norm[plate_6_norm["Metadata_Institution"] == "iNFixion"]
+institution_2_norm = plate_6_norm[plate_6_norm["Metadata_Institution"] == "MGH"]
+
+# Perform KS-test for each feature
+all_genotypes_ks_test_results_norm = {}
+
+for column in plate_6_norm.columns:
+    if column.startswith("Metadata_"):
+        continue
+    ks_stat, p_value = stats.kstest(
+        institution_1_norm[column], institution_2_norm[column]
+    )
+    all_genotypes_ks_test_results_norm[column] = {"ks_stat": ks_stat, "p_value": p_value}
+
+# Convert results to DataFrame for better visualization
+all_genotypes_ks_test_results_norm_df = (
+    pd.DataFrame(all_genotypes_ks_test_results_norm)
+    .T.reset_index()
+    .rename(columns={"index": "feature"})
+)
+
+
+# In[5]:
 
 
 # Split data by institution and WT genotype for comparison
@@ -99,7 +125,7 @@ WT_ks_test_results_norm_df = (
 )
 
 
-# In[ ]:
+# In[6]:
 
 
 # Split data by institution and Null genotype for comparison
@@ -131,16 +157,17 @@ Null_ks_test_results_norm_df = (
 )
 
 
-# In[ ]:
+# In[7]:
 
 
 # Add genotype column to each KS-test results DataFrame
 WT_ks_test_results_norm_df["genotype_comparison"] = "WT"
 Null_ks_test_results_norm_df["genotype_comparison"] = "Null"
+all_genotypes_ks_test_results_norm_df["genotype_comparison"] = "All"
 
 # Combine the two DataFrames
 ks_test_results_norm_df = pd.concat(
-    [WT_ks_test_results_norm_df, Null_ks_test_results_norm_df], ignore_index=True
+    [WT_ks_test_results_norm_df, Null_ks_test_results_norm_df, all_genotypes_ks_test_results_norm_df], ignore_index=True
 )
 
 # Print the combined results
@@ -151,7 +178,7 @@ ks_test_results_norm_df.head()
 
 # ## Add absolute value coefficients per feature from the model to the results (filtering down the data to only the features in the model)
 
-# In[7]:
+# In[8]:
 
 
 if data_type == "cleaned":
@@ -185,7 +212,7 @@ ks_test_results_norm_df.head()
 
 # ## Split feature names into parts and save results
 
-# In[8]:
+# In[9]:
 
 
 # Split the feature column into parts
@@ -224,7 +251,7 @@ ks_test_results_norm_df.head()
 
 # ## Print rows from the top five feature importances
 
-# In[9]:
+# In[10]:
 
 
 ks_test_results_norm_df = ks_test_results_norm_df.sort_values(
