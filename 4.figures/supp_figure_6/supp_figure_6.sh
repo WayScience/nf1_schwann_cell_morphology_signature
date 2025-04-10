@@ -9,4 +9,4 @@ conda activate nf1_figures
 jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
 
 # run notebooks to generate supplemental figure
-Rscript scripts/SuppFigure5_kstestgenotype.r
+Rscript scripts/SuppFigure6_qualitycontrol.r
