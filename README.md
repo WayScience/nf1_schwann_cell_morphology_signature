@@ -28,7 +28,7 @@ We look to improve upon this preliminary model in the future.
 We aim to generate further data which includes the heterozygous genotype (*NF1+/-*).
 AS well, we plan to apply an improved model to large-scale drug screens to capture candidate drugs that make NF1 patient cells look healthy.
 
-**NOTE:** All image analysis and image-based profiling pipelines can be found in the [nf1_cellpainting_data](https://github.com/WayScience/NF1_SchwannCell_data_analysis) repository.
+**NOTE:** All image analysis and image-based profiling pipelines can be found in the [nf1_schwann_cell_painting_data](https://github.com/WayScience/nf1_schwann_cell_painting_data) repository.
 
 ## Repository Structure
 
@@ -47,12 +47,12 @@ This analysis is categorized as follows:
 ### Step 1. Clone the analysis repo
 
 ```sh
-git clone https://github.com/WayScience/NF1_SchwannCell_data_analysis.git
+git clone https://github.com/WayScience/nf1_schwann_cell_morphology_signature.git
 ```
 
 ### Step 2. Change the current path to the repo path
 
-### Step 3. Populate the nf1_data_repo folder from the NF1_SchwannCell_data repo
+### Step 3. Populate the nf1_data_repo folder from the nf1_schwann_cell_painting_data repo
 
 ```sh
 git submodule update --init --recursive
