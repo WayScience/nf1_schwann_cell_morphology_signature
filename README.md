@@ -8,7 +8,7 @@ The modified assay stains for four organelles: nuclei, endoplasmic reticulum, mi
 We applied CellProfiler pipelines to perform quality control, illumination correction, segmentation, and feature extraction.
 
 ![Figure 1](./4.figures/figures/main_figure_1_workflow.png)
-> *Image montage of dataset and analysis workflow.* (A) Example image montages of the Cell Painting channels and composite image (all channels overlayed) for each NF1 genotype. The scale bar represents 25 μM. (B) The workflow of our analysis pipeline demonstrates the steps taken from image analysis to machine learning
+> *Overview of our Cell Painting and data analysis workflow.* (A) Example image montages of the Cell Painting channels and composite image (all channels overlayed) for each NF1 genotype. The scale bar represents 25 μM. (B) Image analysis and data processing pipeline to derive morphology signature of NF1 genotype.
 
 We segmented 22,585 wild-type (WT) and null cells across three plates and utilized 907 significant morphology features representing various organelle shapes and intensity patterns.
 
@@ -16,7 +16,7 @@ We trained a logistic regression binary classifier to predict the NF1 genotype o
 The model shows high performance with with accuracy of 0.85 and 0.80 for the training and testing data splits respectively.
 
 ![Figure 3](./4.figures/figures/main_figure_3_model_eval.png)
-> *Logistic regression model predicts genotype with high performance.* (A) Precision-recall curves comparing the final model applied to shuffled (dashed line) and non-shuffled data (solid line). Applying the model to a shuffled dataset performed worse than the non-shuffled data, demonstrating a biological signal between genotypes. (B) Confusion matrices from the training and testing data splits show higher performance across genotypes in non-shuffled data compared to the shuffled data. (C) Accuracy scores show high performance classifying cells with both genotypes from the training and testing data splits compared to shuffled data. Both panels B and C visualize the results from the optimized model.
+> *Logistic regression model predicts NF1 genotype in ipn02.3 2λ Schwann cells with high performance.* (A) Precision-recall curves comparing the final model applied to shuffled (dashed line) and non-shuffled data (solid line). Applying the model to the shuffled data performed worse than the non-shuffled data, demonstrating a strong biological signal between NF1 genotypes. (B) Confusion matrices from the training and testing sets show higher performance across genotypes in non-shuffled data compared to shuffled data. (C) Accuracies demonstrate high performance in predicting both genotypes from the training and testing sets compared to shuffled data. 
 
 The machine learning model learned from a total of 907 morphology features and assigned weights, or importance scores, per feature. 
 This combination of morphology features represents a high-dimensional signature of how the NF1 genotype influences cell morphology in otherwise isogenic Schwann cells.
