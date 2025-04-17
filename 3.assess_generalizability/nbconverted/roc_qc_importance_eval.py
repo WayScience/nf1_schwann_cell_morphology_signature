@@ -5,7 +5,7 @@
 # 
 # In this method, we have trained two models; one with QC'd data and the other without QC'd data (more noise). 
 # We apply the models to their respective holdout (`Plate_6`) dataset (e.g., QC'd model applied to QC'd data and no-QC model applied to no QC dataset).
-# We filter the Plate 6 dataset to only include the Null and WT cells from the iNFixion cell lines (Null C04 and WT A3), so we are directly comparing the models trained on that specific cell line.
+# We apply the model to both cell line derivatives and compare how the models perform on each.
 # We use bootstrapping, a method that repeatedly samples the dataset with replacement to create random subsets of the same size, where some cells might be duplicated or excluded, simulating variations in the population.
 # We calculate the ROC AUC for each subsample and plot as a histogram.
 # 
