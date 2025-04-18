@@ -5,7 +5,7 @@
 # 
 # In this method, we have trained two models; one with QC'd data and the other without QC'd data (more noise). 
 # We apply the models to their respective holdout (`Plate_6`) dataset (e.g., QC'd model applied to QC'd data and no-QC model applied to no QC dataset).
-# We apply the model to both cell line derivatives and compare how the models perform on each.
+# We apply the model to both cell line derivatives to compare model performances.
 # We use bootstrapping, a method that repeatedly samples the dataset with replacement to create random subsets of the same size, where some cells might be duplicated or excluded, simulating variations in the population.
 # We calculate the ROC AUC for each subsample and plot as a histogram.
 # 
@@ -57,7 +57,7 @@ print(label_mapping)
 
 # ## Extract probabilities from the no QC model applied to the no QC'd holdout plate
 
-# In[ ]:
+# In[4]:
 
 
 # Load the trained model
@@ -165,7 +165,7 @@ print(f"AUC Model 2: {aucQC_MGH}")
 
 # ## Perform ROC AUC bootstrapping method for both QC and no QC models and data
 
-# In[ ]:
+# In[8]:
 
 
 # No QC model iNFixion cell line
@@ -239,7 +239,7 @@ plt.grid(True, linestyle="--", alpha=0.6)
 plt.tight_layout()
 
 # save figure
-plt.savefig(f"{figure_path}/iNFixion_bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
+plt.savefig(f"{figure_path}/original_iNFixion_bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
 
 plt.show()
 
@@ -282,7 +282,7 @@ plt.grid(True, linestyle="--", alpha=0.6)
 plt.tight_layout()
 
 # save figure
-plt.savefig(f"{figure_path}/MGH_bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
+plt.savefig(f"{figure_path}/derivative_MGH_bootstrap_ROC_AUC_QC_versus_no_QC.png", dpi=600)
 
 plt.show()
 
