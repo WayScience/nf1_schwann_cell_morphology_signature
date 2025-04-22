@@ -85,4 +85,4 @@ conda env create -f figure_environment.yml
 
 ## Licensing
 
-Code is licensed under BSD 3-Clause License (see [LICENSE](./LICENSE)).
+Code is licensed under the BSD 3-Clause License (see [LICENSE](./LICENSE)).

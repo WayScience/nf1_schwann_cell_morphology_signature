@@ -1,5 +1,5 @@
 cff-version: 1.1.0
-message: "If you use this software or data, please cite it as below. This work is licensed under BSD-3-Clause."
+message: "If you use this software or data, please cite it as below. This work is licensed under the BSD-3-Clause."
 title: "NF1 Schwann cell Morphology Signature"
 authors:
   - family-names: Tomkinson
@@ -42,7 +42,7 @@ keywords:
   - data science
   - machine learning
 
-abstract: In this repository, we train a binary logistic regression classifier to predict NF1 genotype and generate figures for manuscript.
+abstract: In this repository, we train a binary logistic regression classifier to predict NF1 genotype and generate figures for the manuscript.
 
 license: BSD-3-Clause
 
