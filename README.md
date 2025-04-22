@@ -82,3 +82,7 @@ There are two different environments used in this analysis:
 conda env create -f environment.yml
 conda env create -f figure_environment.yml
 ```
+
+## Licensing
+
+Code is licensed under BSD 3-Clause License (see [LICENSE](./LICENSE)).
