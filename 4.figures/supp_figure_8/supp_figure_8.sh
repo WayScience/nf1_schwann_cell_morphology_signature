@@ -15,6 +15,6 @@ python scripts/1.find_sc_crops_top_feat.py
 conda deactivate
 conda activate nf1_figures
 
-# run notebooks to generate image montage and main figure 5
+# run notebooks to generate image montage and supp figure 8
 Rscript scripts/2.generate_image_montage.r
-Rscript scripts/3.main_figure_5.r
+Rscript scripts/3.supp_figure_8.r
