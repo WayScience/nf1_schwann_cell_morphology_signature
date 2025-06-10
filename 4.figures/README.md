@@ -1,7 +1,6 @@
 # Generate manuscript figures
 
 After evaluation results are extracted, we generate figures describing the results of our experiment.
-There are a total of six figures (four main and two supplemental).
 All figure PNGs are found in the [figures](./figures/) folder.
 
 1. [Main figure 1](./main_figure_1/): This figure describes our workflow and displays an image montage of the wildtype and null *NF1* genotype single cells, which are hard to distinguish just by eye.
