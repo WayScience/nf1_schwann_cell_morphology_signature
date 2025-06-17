@@ -17,6 +17,7 @@ import pathlib
 import random
 
 import pandas as pd
+import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
@@ -29,9 +30,79 @@ from sklearn.utils import parallel_backend
 import warnings
 
 
-# ## Find the root of the git repo on the host system
+# ## Helper functions
 
 # In[2]:
+
+
+# Helper to get X and y from a dataframe
+def get_X_y(df: pd.DataFrame, label_encoder: LabelEncoder) -> tuple:
+    """Generate X and y from a dataframe.
+
+    Args:
+        df (pd.DataFrame): pandas DataFrame containing the data for the split.
+        label_encoder (LabelEncoder): LabelEncoder instance to transform the labels.
+
+    Returns:
+        tuple: Returns the X and y data as a tuple.
+    """
+    meta_cols = df.filter(like="Metadata").columns
+    X = df.drop(columns=meta_cols)
+    y = label_encoder.transform(df["Metadata_genotype"])
+    return X, y
+
+
+def get_pr_df(
+    X: pd.DataFrame,
+    y: np.array,
+    model: LogisticRegression,
+    model_name: str,
+    split_name: str,
+    plate: str = None,
+    institution: str = None,
+) -> pd.DataFrame:
+    """Return a DataFrame of precision-recall points with attached metadata.
+
+    Args:
+        X (pd.DataFrame): X features for the model.
+        y (np.array): y labels for the model.
+        model (LogisticRegression): Model to use for prediction.
+        model_name (str): Model name for the DataFrame (e.g., final or shuffled).
+        split_name (str):  Name of the split (e.g., "train", "test", "holdout").
+        plate (str, optional): Name of plate. Defaults to None.
+        institution (str, optional): Name of institution cell line is derived from. Defaults to None.
+
+    Raises:
+        ValueError: If the model does not produce two class probabilities.
+
+    Returns:
+       pd.DataFrame: DataFrame containing precision, recall, thresholds, and metadata.
+    """
+    proba = model.predict_proba(X)
+    if proba.shape[1] != 2:
+        raise ValueError("Expected binary classification with two class probabilities.")
+    pos_class_proba = proba[:, 1]
+
+    precision, recall, thresholds = precision_recall_curve(y, pos_class_proba)
+    thresholds = np.append(thresholds, np.nan)
+
+    pr_len = len(precision)
+    return pd.DataFrame(
+        {
+            "model": [model_name] * pr_len,
+            "split": [split_name] * pr_len,
+            "precision": precision,
+            "recall": recall,
+            "threshold": thresholds,
+            "plate": [plate] * pr_len,
+            "institution": [institution] * pr_len,
+        }
+    )
+
+
+# ## Find the root of the git repo on the host system
+
+# In[3]:
 
 
 # Get the current working directory
@@ -56,7 +127,7 @@ if root_dir is None:
 
 # ### Set paths
 
-# In[3]:
+# In[4]:
 
 
 # If the data (within the cell painting directory) is stored in a different location, add location here
@@ -64,7 +135,7 @@ repo_dir = pathlib.Path(
     root_dir / "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data"
 )
 
-# Directory containing the feature selected parquet files
+# Directory containing the feature selected parquet files (post-QC)
 data_dir = (
     repo_dir / "3.processing_features/data/single_cell_profiles/cleaned_sc_profiles"
 )
@@ -72,7 +143,7 @@ data_dir = (
 
 # ## Load in and concat dataframes
 
-# In[4]:
+# In[5]:
 
 
 # Define plate names
@@ -123,7 +194,7 @@ combined_df.head()
 
 # ### Generate holdout data by selecting one random well per genotype in each plate
 
-# In[5]:
+# In[6]:
 
 
 # Set random seed for reproducibility
@@ -171,7 +242,7 @@ print("Holdout dataframe shape:", holdout_df.shape)
 holdout_df.head()
 
 
-# In[6]:
+# In[7]:
 
 
 print(holdout_df["Metadata_number_of_singlecells"].unique())
@@ -179,7 +250,7 @@ print(holdout_df["Metadata_number_of_singlecells"].unique())
 
 # ### Generate training and testing split data
 
-# In[7]:
+# In[8]:
 
 
 # Drop holdout indices from combined_df and make a copy
@@ -198,7 +269,7 @@ print(f"Train shape: {train_df.shape}")
 print(f"Test shape: {test_df.shape}")
 
 
-# In[8]:
+# In[9]:
 
 
 print(train_df["Metadata_genotype"].value_counts())
@@ -206,7 +277,7 @@ print(train_df["Metadata_genotype"].value_counts())
 
 # ## Train simple logistic regression model
 
-# In[9]:
+# In[10]:
 
 
 # Extract metadata and feature columns
@@ -227,7 +298,7 @@ for column in X_train_shuffled.columns:
     X_train_shuffled[column] = rng.permutation(X_train_shuffled[column].values)
 
 
-# In[10]:
+# In[11]:
 
 
 # Set folds for k-fold cross validation (default is 5)
@@ -259,8 +330,12 @@ random_search_params = {
 }
 
 
-# In[11]:
+# In[12]:
 
+
+# Create the output directory if it doesn't exist
+model_dir = pathlib.Path("./models")
+model_dir.mkdir(parents=True, exist_ok=True)
 
 # Initialize Logistic Regression and RandomizedSearchCV
 logreg = LogisticRegression(**logreg_params)
@@ -280,6 +355,9 @@ with parallel_backend("multiprocessing"):
         final_model = final_random_search.best_estimator_
         print("Optimal parameters (final):", final_random_search.best_params_)
 
+        # Save the final model
+        joblib.dump(final_model, f"{model_dir}/final_logreg_model.joblib")
+
         ########################################################
         # Train the model on shuffled training data
         ########################################################
@@ -289,76 +367,13 @@ with parallel_backend("multiprocessing"):
         shuffled_model = shuffled_random_search.best_estimator_
         print("Optimal parameters (shuffled):", shuffled_random_search.best_params_)
 
-
-# In[ ]:
-
-
-# Helper to get X and y from a dataframe
-def get_X_y(df: pd.DataFrame, label_encoder: LabelEncoder) -> tuple:
-    """Generate X and y from a dataframe.
-
-    Args:
-        df (pd.DataFrame): pandas DataFrame containing the data for the split.
-        label_encoder (LabelEncoder): LabelEncoder instance to transform the labels.
-
-    Returns:
-        tuple: Returns the X and y data as a tuple.
-    """
-    meta_cols = df.filter(like="Metadata").columns
-    X = df.drop(columns=meta_cols)
-    y = label_encoder.transform(df["Metadata_genotype"])
-    return X, y
+        # Save the shuffled model
+        joblib.dump(shuffled_model, f"{model_dir}/shuffled_logreg_model.joblib")
 
 
-def get_pr_df(
-    X: pd.DataFrame,
-    y: np.array,
-    model: LogisticRegression,
-    model_name: str,
-    split_name: str,
-    plate: str =None,
-    institution: str =None,
-) -> pd.DataFrame:
-    """Return a DataFrame of precision-recall points with attached metadata.
+# ## Extract PR curve metrics and coefficients per feature
 
-    Args:
-        X (pd.DataFrame): X features for the model.
-        y (np.array): y labels for the model.
-        model (LogisticRegression): Model to use for prediction.
-        model_name (str): Model name for the DataFrame (e.g., final or shuffled).
-        split_name (str):  Name of the split (e.g., "train", "test", "holdout").
-        plate (str, optional): Name of plate. Defaults to None.
-        institution (str, optional): Name of institution cell line is derived from. Defaults to None.
-
-    Raises:
-        ValueError: If the model does not produce two class probabilities.
-
-    Returns:
-       pd.DataFrame: DataFrame containing precision, recall, thresholds, and metadata.
-    """
-    proba = model.predict_proba(X)
-    if proba.shape[1] != 2:
-        raise ValueError("Expected binary classification with two class probabilities.")
-    pos_class_proba = proba[:, 1]
-
-    precision, recall, thresholds = precision_recall_curve(y, pos_class_proba)
-    thresholds = np.append(thresholds, np.nan)
-
-    pr_len = len(precision)
-    return pd.DataFrame(
-        {
-            "model": [model_name] * pr_len,
-            "split": [split_name] * pr_len,
-            "precision": precision,
-            "recall": recall,
-            "threshold": thresholds,
-            "plate": [plate] * pr_len,
-            "institution": [institution] * pr_len,
-        }
-    )
-
-
-# In[ ]:
+# In[13]:
 
 
 # Models and data
@@ -417,7 +432,7 @@ df_all_split = pd.concat(all_split_results, ignore_index=True)
 df_per_plate = pd.concat(per_plate_results, ignore_index=True)
 df_plate6_per_institution = pd.concat(plate6_per_inst_results, ignore_index=True)
 
-# Optional: save them
+# Save results to parquet files
 metrics_dir = pathlib.Path("./pr_results")
 metrics_dir.mkdir(parents=True, exist_ok=True)
 
@@ -426,4 +441,66 @@ df_per_plate.to_parquet(metrics_dir / "pr_curve_per_plate.parquet", index=False)
 df_plate6_per_institution.to_parquet(
     metrics_dir / "pr_curve_plate6_per_institution.parquet", index=False
 )
+
+
+# In[14]:
+
+
+# Create the output directory if it doesn't exist
+coeff_dir = pathlib.Path("./coeff_results")
+coeff_dir.mkdir(parents=True, exist_ok=True)
+
+# Extract feature names and coefficients from the final model
+feature_names = X_train.columns
+coefficients = final_model.coef_.flatten()
+
+# Create a DataFrame with features and their coefficients
+coeff_df = pd.DataFrame({"feature": feature_names, "coefficient": coefficients})
+
+# Save to CSV in the coeff_results folder
+coeff_df.to_csv(coeff_dir / "final_model_coefficients.csv", index=False)
+
+# Display the first few rows
+print(coeff_df.shape)
+coeff_df.head()
+
+
+# ## Load in original model coefficients and outer merge
+
+# In[15]:
+
+
+# Load in the original model coefficients
+original_coeff_df = pd.read_parquet(
+    "../../2.evaluate_model/model_evaluation_data/feature_importances_qc.parquet"
+)
+
+# Rename columns to 'feature' and 'coefficient'
+original_coeff_df = original_coeff_df.rename(
+    columns={
+        original_coeff_df.columns[0]: "feature",
+        original_coeff_df.columns[1]: "coefficient",
+    }
+)
+
+# Perform an outer merge of the original model and the new model
+merged_coefs = pd.merge(
+    original_coeff_df,
+    coeff_df,
+    on="feature",
+    how="outer",
+    suffixes=("_orig_model", "_new_model"),
+)
+
+# Fill NaN values with 0
+merged_coefs.fillna(0, inplace=True)
+
+# Save the merged coefficients to a CSV file
+merged_coefs.to_csv(
+    coeff_dir / "merged_coefficients_original_new_model.csv", index=False
+)
+
+# Display the merged dataframe
+print(merged_coefs.shape)
+merged_coefs.head()
 

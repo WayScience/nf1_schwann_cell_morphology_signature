@@ -211,25 +211,22 @@ feat_import_df = pd.read_parquet(
     )
 )
 
-# Find the top highest coefficient feature (is positive to related to predicting WT)
-top_coeff_feature = feat_import_df.sort_values(
+# Sort by feature importance descending
+sorted_feat_import_df = feat_import_df.sort_values(
     by="feature_importances", ascending=False
-).iloc[0]["feature_names"]
+)
 
-# Find the second highest coefficient feature (is positive to related to predicting WT)
-second_top_coeff_feature = feat_import_df.sort_values(
-    by="feature_importances", ascending=False
-).iloc[1]["feature_names"]
+# Find the top highest coefficient feature (is positive and related to predicting WT)
+top_coeff_feature = sorted_feat_import_df.iloc[0]["feature_names"]
+top_coeff_value = sorted_feat_import_df.iloc[0]["feature_importances"]
 
-# Find the top negative feature (predicting Null) [NOT INCLUDED AS MONTAGE]
-top_Null_feature = feat_import_df.loc[
-    feat_import_df["feature_importances"].idxmin(), "feature_names"
-]
+# Find the second highest coefficient feature (is positive and related to predicting WT)
+second_top_coeff_feature = sorted_feat_import_df.iloc[1]["feature_names"]
+second_top_coeff_value = sorted_feat_import_df.iloc[1]["feature_importances"]
 
-# Print the features
-print(top_coeff_feature)
-print(second_top_coeff_feature)
-print(top_Null_feature)
+# Print the features and their values
+print(f"{top_coeff_feature}: {top_coeff_value}")
+print(f"{second_top_coeff_feature}: {second_top_coeff_value}")
 
 
 # ## Filter plate 5 single-cells to only include isolated cells that are not near the edge of the FOV
@@ -288,10 +285,10 @@ max_top_feature
 
 # ### Min single-cells for top highest feature
 
-# In[9]:
+# In[ ]:
 
 
-# Get data frame with the top 3 single-cells from the top WT coefficient
+# Get data frame with the top 6 single-cells
 min_top_feature = filtered_plate5_df[
     filtered_plate5_df["Metadata_genotype"] == "Null"
 ].nsmallest(6, top_coeff_feature)[
@@ -346,10 +343,10 @@ max_second_top_feature
 
 # ### Min single-cells for the second highest feature
 
-# In[11]:
+# In[ ]:
 
 
-# Get data frame with the top 3 single-cells from the second top Null coefficient
+# Get data frame with the top 6 single-cells
 min_second_top_feature = filtered_plate5_df[
     filtered_plate5_df["Metadata_genotype"] == "Null"
 ].nsmallest(6, second_top_coeff_feature)[
