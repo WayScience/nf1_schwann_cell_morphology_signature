@@ -64,7 +64,7 @@ image_montage
 
 supp_fig_8_gg <- (
   image_montage
-) + plot_annotation(tag_levels = list(c("A", "B", "", ""))) & theme(plot.tag = element_text(size = 30))
+) + plot_annotation(theme = theme(plot.tag = element_text(size = 30)))
 
 # Save or display the plot
 ggsave(output_supp_figure_8, plot = supp_fig_8_gg, dpi = 500, height = 16, width = 12)
