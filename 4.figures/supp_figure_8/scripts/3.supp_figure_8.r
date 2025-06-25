@@ -57,7 +57,7 @@ top_feat_montage_max
 image_montage <- (
    free(top_feat_montage_min) +
    top_feat_montage_max
-) + plot_layout(heights = c(1.17,1), guides = "collect")
+) + plot_layout(heights = c(1.175,1), guides = "collect")
 
 image_montage
 
@@ -68,5 +68,3 @@ supp_fig_8_gg <- (
 
 # Save or display the plot
 ggsave(output_supp_figure_8, plot = supp_fig_8_gg, dpi = 500, height = 16, width = 12)
-
-
