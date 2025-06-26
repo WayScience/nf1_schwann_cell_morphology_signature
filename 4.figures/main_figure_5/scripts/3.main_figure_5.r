@@ -101,7 +101,7 @@ second_top_montage_min
 top_row_montage <- (
    free(top_feat_montage_max) +
    second_top_montage_max
-) + plot_layout(widths = c(1,1), guides = "collect")
+) + plot_layout(widths = c(1.1,1), guides = "collect")
 
 top_row_montage
 
@@ -109,14 +109,14 @@ top_row_montage
 bottom_row_montage <- (
    top_feat_montage_min +
    second_top_montage_min
-) + plot_layout(widths = c(1,1), guides = "collect")
+) + plot_layout(widths = c(1.1,1), guides = "collect")
 
 bottom_row_montage
 
 align_plot <- (
     top_row_montage /
     bottom_row_montage
-) + plot_layout(heights = c(1.0, 1.0))
+) + plot_layout(heights = c(1.2, 1.0))
 
 align_plot
 
