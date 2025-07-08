@@ -2,11 +2,11 @@
 # coding: utf-8
 
 # # Classify WT and Null Genotypes Logistic Regression
-# Plates 3, 3p, and 5 are used in all splits to classify genotypes either (WT or Null)
+# Plates 3, 3p, 5, and 6 are used in all splits to classify genotypes either (WT or Null)
 # The feature selected data is used in all data splits.
 # Pre-evaluation metrics are stored from all splits and these plates.
 
-# In[1]:
+# In[ ]:
 
 
 import pathlib
@@ -27,7 +27,7 @@ from sklearn.utils import parallel_backend
 
 # ## Find the root of the git repo on the host system
 
-# In[2]:
+# In[ ]:
 
 
 # Get the current working directory
@@ -52,11 +52,13 @@ if root_dir is None:
 
 # ### Input
 
-# In[3]:
+# In[1]:
 
 
 # OPTIONAL: If the data (within the cell painting directory) is stored in a different location, add location here
-repo_dir = pathlib.Path(root_dir / "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/")
+repo_dir = pathlib.Path(
+    root_dir / "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/"
+)
 
 # Set data level
 data_level = "cleaned"
@@ -64,13 +66,11 @@ data_level = "cleaned"
 # Main directory path (converted or cleaned data)
 if data_level == "cleaned":
     data_dir = pathlib.Path(
-        repo_dir
-        / "3.processing_features/data/single_cell_profiles/cleaned_sc_profiles"
+        repo_dir / "3.processing_features/data/single_cell_profiles/cleaned_sc_profiles"
     )
 else:
     data_dir = pathlib.Path(
-        repo_dir
-        / "3.processing_features/data/single_cell_profiles"
+        repo_dir / "3.processing_features/data/single_cell_profiles"
     )
 
 plate3df_path = pathlib.Path(data_dir / "Plate_3_sc_feature_selected.parquet").resolve(
@@ -82,15 +82,20 @@ plate3pdf_path = pathlib.Path(
 plate5df_path = pathlib.Path(data_dir / "Plate_5_sc_feature_selected.parquet").resolve(
     strict=True
 )
+plate6df_path = pathlib.Path(data_dir / "Plate_6_sc_feature_selected.parquet").resolve(
+    strict=True
+)
 
 plate3df = pd.read_parquet(plate3df_path)
 plate3pdf = pd.read_parquet(plate3pdf_path)
 plate5df = pd.read_parquet(plate5df_path)
+plate6df = pd.read_parquet(plate6df_path)
 
 print("Number of single-cells total per plate:")
 print("Plate 3:", plate3df.shape[0])
 print("Plate 3 prime:", plate3pdf.shape[0])
 print("Plate 5:", plate5df.shape[0])
+print("Plate 6:", plate6df.shape[0])
 
 # Set the seed
 rng = np.random.default_rng(0)
@@ -98,7 +103,7 @@ rng = np.random.default_rng(0)
 
 # ### Outputs
 
-# In[4]:
+# In[ ]:
 
 
 data_path = pathlib.Path("data")
@@ -108,10 +113,11 @@ data_path.mkdir(parents=True, exist_ok=True)
 # ## Splitting and Processing
 # Functions to split and process data
 
-# In[5]:
+# In[ ]:
 
 
 gene_column = "Metadata_genotype"
+
 
 def down_sample_by_genotype(_df):
     """
@@ -129,9 +135,10 @@ def down_sample_by_genotype(_df):
     """
 
     min_gene = _df[gene_column].value_counts().min()
-    return (_df.groupby(gene_column, group_keys=False)
-            .apply(lambda x: x.sample(n=min_gene, random_state=0))
-            )
+    return _df.groupby(gene_column, group_keys=False).apply(
+        lambda x: x.sample(n=min_gene, random_state=0)
+    )
+
 
 def process_plates(_df):
     """
@@ -152,6 +159,7 @@ def process_plates(_df):
     _df = _df.loc[_df[gene_column] != "HET"]
     return _df
 
+
 def shuffle_data(_X):
     """
     Shuffle the columns of the input dataframe independently.
@@ -164,6 +172,7 @@ def shuffle_data(_X):
 
     for column in _X.columns:
         _X[column] = rng.permutation(_X[column])
+
 
 def store_pre_evaluation_data(_X, _y, _metadata, _datasplit):
     """
@@ -183,8 +192,10 @@ def store_pre_evaluation_data(_X, _y, _metadata, _datasplit):
     _datasplit: String
         Data split name.
     """
-    
-    eval_data[f"probability_{probability_class}"].extend(logreg.predict_proba(_X)[:, 1].tolist())
+
+    eval_data[f"probability_{probability_class}"].extend(
+        logreg.predict_proba(_X)[:, 1].tolist()
+    )
     eval_data["datasplit"].extend([_datasplit] * _X.shape[0])
     eval_data["predicted_genotype"].extend(logreg.predict(_X).tolist())
     eval_data["true_genotype"].extend(_y.tolist())
@@ -194,7 +205,7 @@ def store_pre_evaluation_data(_X, _y, _metadata, _datasplit):
 
 # ## Split and process plates
 
-# In[6]:
+# In[ ]:
 
 
 def create_splits(_wells, _plate):
@@ -214,10 +225,16 @@ def create_splits(_wells, _plate):
     Dataframes of the split single cell data.
     """
 
-    return _plate[~_plate["Metadata_Well"].isin(_wells)], _plate[_plate["Metadata_Well"].isin(_wells)]
+    return (
+        _plate[~_plate["Metadata_Well"].isin(_wells)],
+        _plate[_plate["Metadata_Well"].isin(_wells)],
+    )
 
 
-# In[7]:
+# ### Select Test Wells
+# Manually selected test wells to maximize the total number of cells (rest + test) after down-sampling by genotype, while approximately maintaining a 90:10 rest:test ratio.
+
+# In[ ]:
 
 
 plate3df = process_plates(plate3df)
@@ -228,37 +245,65 @@ rest3df, test3df = down_sample_by_genotype(rest3df), down_sample_by_genotype(tes
 plate3pdf = process_plates(plate3pdf)
 p3p_wells = ["F11", "G11", "C3", "F3"]
 rest3pdf, test3pdf = create_splits(p3p_wells, plate3pdf)
-rest3pdf, test3pdf = down_sample_by_genotype(rest3pdf), down_sample_by_genotype(test3pdf)
+rest3pdf, test3pdf = down_sample_by_genotype(rest3pdf), down_sample_by_genotype(
+    test3pdf
+)
 
 plate5df = process_plates(plate5df)
 p5_wells = ["C9", "E11", "E3", "G3"]
 rest5df, test5df = create_splits(p5_wells, plate5df)
 rest5df, test5df = down_sample_by_genotype(rest5df), down_sample_by_genotype(test5df)
 
+plate6df = process_plates(plate6df)
+p6_wells = ["E9", "B10", "D11", "D4"]
+rest6df, test6df = create_splits(p6_wells, plate6df)
+rest6df, test6df = down_sample_by_genotype(rest6df), down_sample_by_genotype(test6df)
+
 
 # ## Combine plate columns across each data split
 
-# In[8]:
+# In[ ]:
 
 
 # Columns common to all plates
-plate_cols = list(set(plate5df.columns) & set(plate3df.columns) & set(plate3pdf.columns))
+plate_cols = list(
+    set(plate5df.columns)
+    & set(plate3df.columns)
+    & set(plate3pdf.columns)
+    & set(plate6df.columns)
+)
 
-restdf = pd.concat([rest3df[plate_cols], rest3pdf[plate_cols], rest5df[plate_cols]], ignore_index=True).reset_index(drop=True)
+restdf = pd.concat(
+    [
+        rest3df[plate_cols],
+        rest3pdf[plate_cols],
+        rest5df[plate_cols],
+        rest6df[plate_cols],
+    ],
+    ignore_index=True,
+).reset_index(drop=True)
 
-testdf = pd.concat([test3df[plate_cols], test3pdf[plate_cols], test5df[plate_cols]], ignore_index=True).reset_index(drop=True)
+testdf = pd.concat(
+    [
+        test3df[plate_cols],
+        test3pdf[plate_cols],
+        test5df[plate_cols],
+        test6df[plate_cols],
+    ],
+    ignore_index=True,
+).reset_index(drop=True)
 
 
 # ## Encode genotypes and extract feature data
 
-# In[9]:
+# In[ ]:
 
 
 meta_cols = testdf.filter(like="Metadata").columns
 feat_cols = testdf.drop(columns=meta_cols).columns
 
 
-# In[10]:
+# In[ ]:
 
 
 le = LabelEncoder()
@@ -277,7 +322,7 @@ probability_class = le.inverse_transform([1])[0]
 
 # ## Specify parameters for training
 
-# In[11]:
+# In[ ]:
 
 
 logreg_params = {
@@ -288,9 +333,7 @@ logreg_params = {
 }
 
 # Random sampling range of hyperparameter
-param_ranges = {
-    "C": (0, 200)
-}
+param_ranges = {"C": (0, 200)}
 
 # Number of iteration to optimize hyperparameters
 rand_iter = 500
@@ -306,15 +349,14 @@ n_splits = 8
 
 # Generate hyperparameter samples
 random_params = {
-    i:
-    {key: random.uniform(*param_ranges[key]) for key in param_ranges}
+    i: {key: random.uniform(*param_ranges[key]) for key in param_ranges}
     for i in range(rand_iter)
 }
 
 
 # ## Hyperparameter search
 
-# In[12]:
+# In[2]:
 
 
 # Store model results for evaluation
@@ -351,8 +393,12 @@ for idx, rparams in random_params.items():
         preds_shuf = logreg.predict(X_val_shuf)
         acc += accuracy_score(y_val, preds)
 
-        store_pre_evaluation_data(X_val, y_val, restdf.iloc[val_index][meta_cols], "val")
-        store_pre_evaluation_data(X_val_shuf, y_val, restdf.iloc[val_index][meta_cols], "shuffled_val")
+        store_pre_evaluation_data(
+            X_val, y_val, restdf.iloc[val_index][meta_cols], "val"
+        )
+        store_pre_evaluation_data(
+            X_val_shuf, y_val, restdf.iloc[val_index][meta_cols], "shuffled_val"
+        )
 
     # Average accuracy for the folds
     acc = acc / n_splits
@@ -368,7 +414,7 @@ print(f"Best average validation accuracy = {best_acc}")
 
 # ## Retrain model
 
-# In[13]:
+# In[3]:
 
 
 logreg_params = {
@@ -386,7 +432,7 @@ logreg.fit(X, y)
 
 # ## Shuffle train and validation data
 
-# In[14]:
+# In[ ]:
 
 
 X_shuf = X.copy()
@@ -400,7 +446,7 @@ shuffle_data(X_test_shuf)
 
 # ## Store pre-evaluation split data
 
-# In[15]:
+# In[ ]:
 
 
 store_pre_evaluation_data(X, y, restdf[meta_cols], "train")
@@ -410,12 +456,14 @@ store_pre_evaluation_data(X_test, y_test, testdf[meta_cols], "test")
 store_pre_evaluation_data(X_test_shuf, y_test, testdf[meta_cols], "shuffled_test")
 
 
-# In[16]:
+# In[ ]:
 
 
 suffix = "_qc" if data_level == "cleaned" else ""
 
 dump(logreg, f"{data_path}/trained_nf1_model{suffix}.joblib")
 dump(le, f"{data_path}/trained_nf1_model_label_encoder{suffix}.joblib")
-pd.DataFrame(eval_data).to_parquet(f"{data_path}/nf1_model_pre_evaluation_results{suffix}.parquet")
+pd.DataFrame(eval_data).to_parquet(
+    f"{data_path}/nf1_model_pre_evaluation_results{suffix}.parquet"
+)
 
