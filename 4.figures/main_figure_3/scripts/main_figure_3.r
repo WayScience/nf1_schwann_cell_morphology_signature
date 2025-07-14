@@ -35,6 +35,9 @@ PR_results_df <- PR_results_df %>%
 dim(PR_results_df)
 head(PR_results_df)
 
+dplyr::count(PR_results_df, datasplit, shuffled_type)
+
+
 # Filter only rows with 'all_plates' in the 'plate' column
 filtered_all_plates_pr_df <- PR_results_df[PR_results_df$plate == "all_plates", ]
 
@@ -59,8 +62,8 @@ pr_all_plates_plot <- (
     # change the text size
     + theme(
         # x and y axis text size
-        axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         # x and y axis title size
         axis.title.x = element_text(size = 22),
         axis.title.y = element_text(size = 22),
@@ -129,8 +132,8 @@ accuracy_score_all_plates_plot <- (
     # change the text size
     + theme(
         # x and y axis text size
-        axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         # x and y axis title size
         axis.title.x = element_text(size = 22),
         axis.title.y = element_text(size = 22),
@@ -216,10 +219,10 @@ confusion_matrix_all_plates_plot <- (
     xlab("True genotype") +
     # change the text size
     theme(
-        strip.text = element_text(size = 16),
+        strip.text = element_text(size = 18),
         # x and y axis text size
-        axis.text.x = element_text(size = 20, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 22, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 22),
         # x and y axis title size
         axis.title.x = element_text(size = 22),
         axis.title.y = element_text(size = 22),
@@ -232,15 +235,244 @@ confusion_matrix_all_plates_plot <- (
 confusion_matrix_all_plates_plot
 
 
-align_plot <- (
-    free(pr_all_plates_plot) |
+results_dir <- file.path(
+    "../../1.train_models/train_deriv_model/pr_results"
+)
+
+# Load data
+PR_results_file <- file.path(results_dir, "precision_recall_final_model.parquet")
+
+PR_results_df <- arrow::read_parquet(PR_results_file)
+
+# Create new column for model using the datasplit prefix
+PR_results_df <- PR_results_df %>%
+  mutate(shuffled_type = ifelse(grepl("^shuffled_", datasplit), "TRUE", "FALSE"))
+
+# Remove "shuffled_" prefix from datasplit column for plotting
+PR_results_df <- PR_results_df %>%
+  mutate(datasplit = sub("^shuffled_", "", datasplit))
+
+# Rename "data splits for interpretation
+PR_results_df <- PR_results_df %>%
+  mutate(datasplit = recode(datasplit, "test" = "Test", "train" = "Train", "val" = "Val"))
+
+dim(PR_results_df)
+head(PR_results_df)
+
+# Filter only rows with 'all_plates' in the 'plate' column
+filtered_all_plates_pr_df <- PR_results_df[PR_results_df$plate == "all_plates", ]
+
+width <- 12
+height <- 12
+options(repr.plot.width = width, repr.plot.height = height)
+pr_new_model_all_plates_plot <- (
+    ggplot(filtered_all_plates_pr_df, aes(x = recall, y = precision, color = datasplit, linetype = shuffled_type))
+    + geom_line(aes(linetype = shuffled_type), linewidth = 1)
+    + theme_bw()
+    + coord_fixed()
+    + labs(color = "ML model\ndata split", linetype = "Features\nshuffled", x = "Recall", y = "Precision")
+    # change the colors
+    + scale_color_manual(values = c(
+        "Test" = brewer.pal(8, "Dark2")[6],
+        "Train" = brewer.pal(8, "Dark2")[3],
+        "Val" = brewer.pal(8, "Dark2")[2]
+    ))
+    + scale_y_continuous(limits = c(0, 1))
+    # change the line thickness of the lines in the legend
+    + guides(linetype = guide_legend(override.aes = list(size = 1)))  
+    # change the text size
+    + theme(
+        # x and y axis text size
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
+        # x and y axis title size
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        # legend text size
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 22),
+    )
+)
+
+pr_new_model_all_plates_plot
+
+# Filter only rows with 'Plate_6_orig' and `Plate_6_deriv' in the 'plate' column
+filtered_plate_6_pr_df <- PR_results_df[PR_results_df$plate %in% c("Plate_6_orig", "Plate_6_deriv"), ]
+
+# Add new column for derivative type
+filtered_plate_6_pr_df <- filtered_plate_6_pr_df %>%
+    mutate(
+        derivative_type = ifelse(plate == "Plate_6_orig", "original", "derivative"),
+        group_type = paste0(derivative_type, " (", datasplit, ")")
+        )
+
+width <- 12
+height <- 12
+options(repr.plot.width = width, repr.plot.height = height)
+pr_plate_6_deriv_plot <- (
+    ggplot(filtered_plate_6_pr_df, aes(x = recall, y = precision, color = group_type, linetype = shuffled_type))
+    + geom_line(linewidth = 1)
+    + theme_bw()
+    + coord_fixed()
+    + labs(color = "ipn02.3 2λ", linetype = "Features\nshuffled", x = "Recall", y = "Precision")
+    # change the colors
+    + scale_color_manual(values = c(
+        "original (Train)" = "#1b9e77",      # dark green
+        "original (Val)"   = "#66c2a5",      # medium green
+        "original (Test)"  = "#a6dba0",      # light green
+        "derivative (Train)" = "#8B4513",    # dark brown (saddle brown)
+        "derivative (Val)"   = "#D2691E",    # chocolate
+        "derivative (Test)"  = "#F4A460"     # sandy brown
+    ))
+    + scale_y_continuous(limits = c(0, 1))
+    # change the line thickness of the lines in the legend
+    + guides(linetype = guide_legend(override.aes = list(size = 1)))  
+    # change the text size
+    + theme(
+        # x and y axis text size
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
+        # x and y axis title size
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        # legend text size
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 22),
+    )
+)
+
+pr_plate_6_deriv_plot
+
+# Load the merged coefficients file
+merged_coefficients_file <- "../../1.train_models/train_deriv_model/coeff_results/merged_coefficients_original_new_model.csv"
+
+if (file.exists(merged_coefficients_file)) {
+    merged_coefficients <- read.csv(merged_coefficients_file)
+    cat("Merged coefficients file loaded successfully.\n")
+} else {
+    stop("File not found:", merged_coefficients_file)
+}
+
+# Split the feature column into parts to add back as columns
+feature_parts <- strsplit(merged_coefficients$feature, "_")
+
+# Add feature parts as columns
+merged_coefficients$compartment <- sapply(feature_parts, `[`, 1)
+merged_coefficients$feature_group <- sapply(feature_parts, `[`, 2)
+merged_coefficients$measurement <- sapply(feature_parts, `[`, 3)
+merged_coefficients$organelle <- sapply(feature_parts, `[`, 4)
+merged_coefficients$parameter1 <- sapply(feature_parts, `[`, 5)
+merged_coefficients$parameter2 <- sapply(feature_parts, `[`, 6)
+merged_coefficients$parameter3 <- sapply(feature_parts, `[`, 7)
+
+# Replace invalid organelle values with "other"
+merged_coefficients$organelle <- ifelse(
+    is.na(merged_coefficients$organelle) |
+        grepl("^[0-9]+$", merged_coefficients$organelle) |
+        merged_coefficients$organelle %in% c("Adjacent", "X", "Y"),
+    "other",
+    merged_coefficients$organelle
+)
+
+# Update organelle names based on channel
+merged_coefficients$organelle <- dplyr::recode(
+    merged_coefficients$organelle,
+    "DAPI" = "Nucleus",
+    "GFP" = "ER",
+    "RFP" = "Actin",
+    "CY5" = "Mito",
+    .default = merged_coefficients$organelle
+)
+
+# Display the first few rows of the loaded data
+head(merged_coefficients)
+
+# Get top 10 features by absolute value for each model
+top10_new <- merged_coefficients %>%
+    arrange(desc(abs(coefficient_new_model))) %>%
+    slice(1:10) %>%
+    pull(feature)
+
+top10_orig <- merged_coefficients %>%
+    arrange(desc(abs(coefficient_orig_model))) %>%
+    slice(1:10) %>%
+    pull(feature)
+
+# Find intersection and count
+common_features <- intersect(top10_new, top10_orig)
+num_common <- length(common_features)
+
+cat("Number of overlapping top 10 features between both models:", num_common, "\n")
+cat("Common features:\n")
+print(common_features)
+
+# Set height and width of plot for visualizing
+width <- 12
+height <- 12
+options(repr.plot.width = width, repr.plot.height = height)
+
+# Generate scatterplot of coefficients
+scatterplot_models <- ggplot(merged_coefficients, aes(
+    x = coefficient_orig_model, y = coefficient_new_model,
+    color = feature_group, shape = organelle
+)) +
+    coord_fixed(ratio = 1.5) +
+    geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+    geom_abline(slope = 1, intercept = 0, linetype = "solid", color = "gray30") +
+    geom_point(size = 4, alpha = 0.5) +
+    theme_bw() +
+    theme(
+        text = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16)
+    ) +
+    labs(
+        x = "Coefficient: Original model",
+        y = "Coefficient: New model",
+        color = "Feature group",
+        shape = "Organelle"
+    )
+
+scatterplot_models
+
+width <- 22
+height <- 7
+options(repr.plot.width = width, repr.plot.height = height)
+
+top_plot <- (
+    pr_all_plates_plot |
     confusion_matrix_all_plates_plot |
     accuracy_score_all_plates_plot
-) + plot_layout(widths = c(3,2,2))
+) + plot_layout(widths = c(2,1.8,2))
+
+top_plot
+
+width <- 22
+height <- 7
+options(repr.plot.width = width, repr.plot.height = height)
+
+bottom_plot <- (
+    pr_new_model_all_plates_plot |
+    pr_plate_6_deriv_plot |
+    scatterplot_models
+) + plot_layout(widths = c(2,2,2))
+
+bottom_plot
+
+width <- 24
+height <- 13
+options(repr.plot.width = width, repr.plot.height = height)
+
+align_plot <- top_plot / bottom_plot + plot_layout(heights = c(1, 1))
+
+align_plot
 
 fig_3_gg <- (
   align_plot
-) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 25))
+) + plot_annotation(tag_levels = list(c("A", "B", "C", "D", "E", "F"))) & theme(plot.tag = element_text(size = 25))
 
 # Save the plot
-ggsave(output_main_figure_3, plot = fig_3_gg, dpi = 500, height = 6.5, width = 22)
+ggsave(output_main_figure_3, plot = fig_3_gg, dpi = 500, height = height, width = width)

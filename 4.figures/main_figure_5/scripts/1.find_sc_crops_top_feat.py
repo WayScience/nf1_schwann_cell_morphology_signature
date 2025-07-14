@@ -130,9 +130,9 @@ cell_painting_dir = pathlib.Path(
     "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data"
 )
 
-# Images directory for plate 5 (using for finding single-cells)
+# Images directory for plate 6 (using for finding single-cells)
 images_dir = pathlib.Path(
-    f"{cell_painting_dir}/1.cellprofiler_ic/Corrected_Images/Corrected_Plate_5"
+    f"{cell_painting_dir}/1.cellprofiler_ic/Corrected_Images/Corrected_Plate_6"
 ).resolve(strict=True)
 
 # Output dir for cropped images
@@ -152,22 +152,22 @@ list_of_dfs = []
 list_of_names = []
 
 
-# ## Load in Plate 5 data to generate repesentative images from
+# ## Load in Plate 6 data to generate repesentative images from both derivatives
 
 # In[5]:
 
 
 # Load in QC normalized + feature selected data as data frame
-plate5_df = pd.read_parquet(
+plate_df = pd.read_parquet(
     pathlib.Path(
-        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles/Plate_5_sc_feature_selected.parquet"
+        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles/Plate_6_sc_feature_selected.parquet"
     )
 )
 
 # Load in QC annotated dataframe to extract neighbors
 annot_df = pd.read_parquet(
     pathlib.Path(
-        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles/Plate_5_sc_annotated.parquet"
+        f"{cell_painting_dir}/3.processing_features/data/single_cell_profiles/cleaned_sc_profiles/Plate_6_sc_annotated.parquet"
     ),
     columns=[
         "Metadata_Well",
@@ -177,27 +177,29 @@ annot_df = pd.read_parquet(
     ],
 )
 
-plate5_df = plate5_df.merge(
+plate_df = plate_df.merge(
     annot_df,
     on=["Metadata_Well", "Metadata_Site", "Metadata_Nuclei_Number_Object_Number"],
     how="inner",
 )
 
-plate5_df.rename(
+plate_df.rename(
     columns={
         "Cells_Neighbors_NumberOfNeighbors_Adjacent": "Metadata_Number_of_Cells_Neighbors_Adjacent"
     },
     inplace=True,
 )
 
-print(plate5_df.shape)
-plate5_df.head()
+# Drop HET cells
+plate_df = plate_df[plate_df["Metadata_genotype"] != "HET"]
+
+print(plate_df.shape)
+plate_df.head()
 
 
 # ## Load in feature importance data and determine the top two highest coefficients 
 # 
-# We will be creating image montages for the features with the highest coefficients, which both relate to being important for predicting WT genotype (positive values).
-# The third highest value (in terms of absolute value) is a feature that is most important for predicting Null genotype, but we do not montage it here.
+# We will be creating image montages for the features with the highest coefficients (after absolute value). Below will show the top two ranked features with their sign.
 # 
 # **Note:** Top positive feature means the most important in predicting the WT genotype, most negative is most important in predicting Null genotype.
 
@@ -205,66 +207,68 @@ plate5_df.head()
 
 
 # Load in feature importances from QC model
-feat_import_df = pd.read_parquet(
-    pathlib.Path(
-        "../../2.evaluate_model/model_evaluation_data/feature_importances_qc.parquet"
-    )
+feat_import_df = pd.read_csv(
+    pathlib.Path("../supp_figure_7/coeff_results/final_model_coefficients.csv")
 )
 
-# Sort by feature importance descending
-sorted_feat_import_df = feat_import_df.sort_values(
-    by="feature_importances", ascending=False
+# Sort by absolute value of coefficient, descending
+sorted_abs_feat_import_df = feat_import_df.reindex(
+    feat_import_df["coefficient"].abs().sort_values(ascending=False).index
 )
 
-# Find the top highest coefficient feature (is positive and related to predicting WT)
-top_coeff_feature = sorted_feat_import_df.iloc[0]["feature_names"]
-top_coeff_value = sorted_feat_import_df.iloc[0]["feature_importances"]
+# Find the top two features by absolute coefficient value (keep sign)
+top_coeff_feature = sorted_abs_feat_import_df.iloc[0]["feature"]
+top_coeff_value = sorted_abs_feat_import_df.iloc[0]["coefficient"]
 
-# Find the second highest coefficient feature (is positive and related to predicting WT)
-second_top_coeff_feature = sorted_feat_import_df.iloc[1]["feature_names"]
-second_top_coeff_value = sorted_feat_import_df.iloc[1]["feature_importances"]
+second_top_coeff_feature = sorted_abs_feat_import_df.iloc[1]["feature"]
+second_top_coeff_value = sorted_abs_feat_import_df.iloc[1]["coefficient"]
 
-# Print the features and their values
+# Print the features and their signed values
 print(f"{top_coeff_feature}: {top_coeff_value}")
 print(f"{second_top_coeff_feature}: {second_top_coeff_value}")
 
 
-# ## Filter plate 5 single-cells to only include isolated cells that are not near the edge of the FOV
+# ## Filter single-cells to only include isolated cells that are not near the edge of the FOV
 
 # In[7]:
 
 
 # Filter the DataFrame directly
-filtered_plate5_df = plate5_df[
-    (plate5_df["Metadata_Number_of_Cells_Neighbors_Adjacent"].isin([0]))
-    & (plate5_df["Metadata_Nuclei_Location_Center_X"] > crop_size // 2)
+filtered_plate_df = plate_df[
+    (plate_df["Metadata_Number_of_Cells_Neighbors_Adjacent"].isin([0]))
+    & (plate_df["Metadata_Nuclei_Location_Center_X"] > crop_size // 2)
     & (
-        plate5_df["Metadata_Nuclei_Location_Center_X"]
-        < (plate5_df["Metadata_Nuclei_Location_Center_X"].max() - crop_size // 2)
+        plate_df["Metadata_Nuclei_Location_Center_X"]
+        < (plate_df["Metadata_Nuclei_Location_Center_X"].max() - crop_size // 2)
     )
-    & (plate5_df["Metadata_Nuclei_Location_Center_Y"] > crop_size // 2)
+    & (plate_df["Metadata_Nuclei_Location_Center_Y"] > crop_size // 2)
     & (
-        plate5_df["Metadata_Nuclei_Location_Center_Y"]
-        < (plate5_df["Metadata_Nuclei_Location_Center_Y"].max() - crop_size // 2)
+        plate_df["Metadata_Nuclei_Location_Center_Y"]
+        < (plate_df["Metadata_Nuclei_Location_Center_Y"].max() - crop_size // 2)
     )
 ]
 
-print(filtered_plate5_df.shape)
-filtered_plate5_df.head()
+print(filtered_plate_df.shape)
+filtered_plate_df.head()
 
 
-# ### Max single-cells for top highest feature
+# ### Max single-cells for top highest feature (original)
 
 # In[8]:
 
 
-# Get data frame with the next top 6 single-cells
-max_top_feature = (
-    filtered_plate5_df[filtered_plate5_df["Metadata_genotype"] == "WT"]
-    .nlargest(6, top_coeff_feature)[
+## Get data frame with the top 3 single-cells for WT genotype from iNFixion institution
+max_top_feature_orig = (
+    filtered_plate_df[
+        (filtered_plate_df["Metadata_genotype"] == "WT")
+        & (filtered_plate_df["Metadata_Institution"] == "iNFixion")
+    ]
+    .sort_values(by=top_coeff_feature, ascending=False)
+    .iloc[1:4][
         [
             top_coeff_feature,
             "Metadata_genotype",
+            "Metadata_Institution",
             "Metadata_Well",
             "Metadata_Plate",
             "Metadata_Site",
@@ -276,25 +280,27 @@ max_top_feature = (
 )
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(max_top_feature)
-list_of_names.append("max_top_feature")
+list_of_dfs.append(max_top_feature_orig)
+list_of_names.append("max_top_feature_orig")
 
-print(max_top_feature.shape)
-max_top_feature
-
-
-# ### Min single-cells for top highest feature
-
-# In[ ]:
+print(max_top_feature_orig.shape)
+max_top_feature_orig
 
 
-# Get data frame with the top 6 single-cells
-min_top_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "Null"
-].nsmallest(6, top_coeff_feature)[
+# ### Max single-cells for top highest feature (derivative)
+
+# In[9]:
+
+
+## Get data frame with the top 3 single-cells for WT genotype from MGH institution
+max_top_feature_deriv = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "WT")
+    & (filtered_plate_df["Metadata_Institution"] == "MGH")
+].nlargest(3, top_coeff_feature)[
     [
         top_coeff_feature,
         "Metadata_genotype",
+        "Metadata_Institution",
         "Metadata_Well",
         "Metadata_Plate",
         "Metadata_Site",
@@ -305,25 +311,27 @@ min_top_feature = filtered_plate5_df[
 ]
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(min_top_feature)
-list_of_names.append("min_top_feature")
+list_of_dfs.append(max_top_feature_deriv)
+list_of_names.append("max_top_feature_deriv")
 
-print(min_top_feature.shape)
-min_top_feature
+print(max_top_feature_deriv.shape)
+max_top_feature_deriv
 
 
-# ### Max single-cells for the second highest feature
+# ### Min single-cells for top highest feature (original)
 
 # In[10]:
 
 
-# Get data frame with the top 6 single-cells
-max_second_top_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "WT"
-].nlargest(6, second_top_coeff_feature)[
+## Get data frame with the bottom 3 single-cells for Null genotype from iNFixion institution
+min_top_feature_orig = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "Null")
+    & (filtered_plate_df["Metadata_Institution"] == "iNFixion")
+].nsmallest(3, top_coeff_feature)[
     [
-        second_top_coeff_feature,
+        top_coeff_feature,
         "Metadata_genotype",
+        "Metadata_Institution",
         "Metadata_Well",
         "Metadata_Plate",
         "Metadata_Site",
@@ -334,25 +342,27 @@ max_second_top_feature = filtered_plate5_df[
 ]
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(max_second_top_feature)
-list_of_names.append("max_second_top_feature")
+list_of_dfs.append(min_top_feature_orig)
+list_of_names.append("min_top_feature_orig")
 
-print(max_second_top_feature.shape)
-max_second_top_feature
-
-
-# ### Min single-cells for the second highest feature
-
-# In[ ]:
+print(min_top_feature_orig.shape)
+min_top_feature_orig
 
 
-# Get data frame with the top 6 single-cells
-min_second_top_feature = filtered_plate5_df[
-    filtered_plate5_df["Metadata_genotype"] == "Null"
-].nsmallest(6, second_top_coeff_feature)[
+# ### Min single-cells for top highest feature (derivative)
+
+# In[11]:
+
+
+## Get data frame with the bottom 3 single-cells for Null genotype from MGH institution
+min_top_feature_deriv = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "Null")
+    & (filtered_plate_df["Metadata_Institution"] == "MGH")
+].nsmallest(3, top_coeff_feature)[
     [
-        second_top_coeff_feature,
+        top_coeff_feature,
         "Metadata_genotype",
+        "Metadata_Institution",
         "Metadata_Well",
         "Metadata_Plate",
         "Metadata_Site",
@@ -363,16 +373,140 @@ min_second_top_feature = filtered_plate5_df[
 ]
 
 # Append the DataFrame and its name to the lists
-list_of_dfs.append(min_second_top_feature)
-list_of_names.append("min_second_top_feature")
+list_of_dfs.append(min_top_feature_deriv)
+list_of_names.append("min_top_feature_deriv")
 
-print(min_second_top_feature.shape)
-min_second_top_feature
+print(min_top_feature_deriv.shape)
+min_top_feature_deriv
+
+
+# ### Max single-cells for the second highest feature (original)
+
+# In[12]:
+
+
+# Get data frame with the top 3 single-cells for Null genotype from iNFixion institution
+max_second_top_feature_orig = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "Null")
+    & (filtered_plate_df["Metadata_Institution"] == "iNFixion")
+].nlargest(3, second_top_coeff_feature)[
+    [
+        second_top_coeff_feature,
+        "Metadata_genotype",
+        "Metadata_Institution",
+        "Metadata_Well",
+        "Metadata_Plate",
+        "Metadata_Site",
+        "Metadata_Number_of_Cells_Neighbors_Adjacent",
+        "Metadata_Nuclei_Location_Center_X",
+        "Metadata_Nuclei_Location_Center_Y",
+    ]
+]
+
+# Append the DataFrame and its name to the lists
+list_of_dfs.append(max_second_top_feature_orig)
+list_of_names.append("max_second_top_feature_orig")
+
+print(max_second_top_feature_orig.shape)
+max_second_top_feature_orig
+
+
+# ### Max single-cells for the second highest feature (derivative)
+
+# In[13]:
+
+
+# Get data frame with the top 3 single-cells for Null genotype from MGH institution
+max_second_top_feature_deriv = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "Null")
+    & (filtered_plate_df["Metadata_Institution"] == "MGH")
+].nlargest(3, second_top_coeff_feature)[
+    [
+        second_top_coeff_feature,
+        "Metadata_genotype",
+        "Metadata_Institution",
+        "Metadata_Well",
+        "Metadata_Plate",
+        "Metadata_Site",
+        "Metadata_Number_of_Cells_Neighbors_Adjacent",
+        "Metadata_Nuclei_Location_Center_X",
+        "Metadata_Nuclei_Location_Center_Y",
+    ]
+]
+
+# Append the DataFrame and its name to the lists
+list_of_dfs.append(max_second_top_feature_deriv)
+list_of_names.append("max_second_top_feature_deriv")
+
+print(max_second_top_feature_deriv.shape)
+max_second_top_feature_deriv
+
+
+# ### Min single-cells for the second highest feature (original)
+
+# In[14]:
+
+
+# Get data frame with the bottom 3 single-cells for WT genotype from iNFixion institution
+min_second_top_feature_orig = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "WT")
+    & (filtered_plate_df["Metadata_Institution"] == "iNFixion")
+].nsmallest(3, second_top_coeff_feature)[
+    [
+        second_top_coeff_feature,
+        "Metadata_genotype",
+        "Metadata_Institution",
+        "Metadata_Well",
+        "Metadata_Plate",
+        "Metadata_Site",
+        "Metadata_Number_of_Cells_Neighbors_Adjacent",
+        "Metadata_Nuclei_Location_Center_X",
+        "Metadata_Nuclei_Location_Center_Y",
+    ]
+]
+
+# Append the DataFrame and its name to the lists
+list_of_dfs.append(min_second_top_feature_orig)
+list_of_names.append("min_second_top_feature_orig")
+
+print(min_second_top_feature_orig.shape)
+min_second_top_feature_orig
+
+
+# ### Min single-cells for the second highest feature (derivative)
+
+# In[15]:
+
+
+# Get data frame with the bottom 3 single-cells for WT genotype from MGH institution
+min_second_top_feature_deriv = filtered_plate_df[
+    (filtered_plate_df["Metadata_genotype"] == "WT")
+    & (filtered_plate_df["Metadata_Institution"] == "MGH")
+].nsmallest(3, second_top_coeff_feature)[
+    [
+        second_top_coeff_feature,
+        "Metadata_genotype",
+        "Metadata_Institution",
+        "Metadata_Well",
+        "Metadata_Plate",
+        "Metadata_Site",
+        "Metadata_Number_of_Cells_Neighbors_Adjacent",
+        "Metadata_Nuclei_Location_Center_X",
+        "Metadata_Nuclei_Location_Center_Y",
+    ]
+]
+
+# Append the DataFrame and its name to the lists
+list_of_dfs.append(min_second_top_feature_deriv)
+list_of_names.append("min_second_top_feature_deriv")
+
+print(min_second_top_feature_deriv.shape)
+min_second_top_feature_deriv
 
 
 # ## Merge feature info into dictionary for processing
 
-# In[12]:
+# In[16]:
 
 
 sc_dict = create_sc_dict(dfs=list_of_dfs, names=list_of_names)
@@ -383,7 +517,7 @@ pprint(list(sc_dict.items())[:2], indent=4)
 
 # ## Generate single-cell crops 
 
-# In[13]:
+# In[17]:
 
 
 generate_sc_crops(

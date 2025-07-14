@@ -8,5 +8,5 @@ conda activate nf1_figures
 # convert all notebooks to script files into the scripts folder
 jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
 
-# run notebooks to generate supplemental figure
-Rscript scripts/SuppFigure5_kstestgenotype.r
+# run notebooks to generate figure
+Rscript scripts/supp_figure_5.r

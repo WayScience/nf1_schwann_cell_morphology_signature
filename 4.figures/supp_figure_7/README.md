@@ -1,9 +1,8 @@
-# Creating supplemental figure 7 - New model performance with both cell lines
+# Creating supplemental figure 6 - Image quality control distributions
 
-To generate the seventh supplemental figure of the manuscript, there are 2 steps to follow:
+To generate this supplemental figure of the manuscript, there is one step to follow:
 
-1. [1.train_log_model.ipynb](./1.train_log_model.ipynb): Train a simple logistic regression model with both cell lines and generate PR curve results.
-2. [2.supp_figure_7.ipynb](./2.supp_figure_7.ipynb): Generate figure with PR curves.
+1. [supp_figure_7.ipynb](./supp_figure_7.ipynb): Generate distribution plots for blur and saturation metrics across plate, and patch the plots together to make one figure.
 
 All steps can be ran with the bash script using the command below:
 

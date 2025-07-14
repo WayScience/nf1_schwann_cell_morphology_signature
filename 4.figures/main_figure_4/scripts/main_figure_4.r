@@ -11,13 +11,19 @@ output_main_figure_4 <- file.path(
     figure_dir, "main_figure_4_feature_importance.png"
 )
 results_dir <- file.path(
-    "../../2.evaluate_model/model_evaluation_data"
+    "../supp_figure_7/coeff_results"
 )
 
 # Load data
-feat_import_file <- file.path(results_dir, "feature_importances_qc.parquet")
+feat_import_file <- file.path(results_dir, "final_model_coefficients.csv")
 
-feat_import_df <- arrow::read_parquet(feat_import_file)
+feat_import_df <- read.csv(feat_import_file)
+
+# Change the column names to be more descriptive
+colnames(feat_import_df) <- c(
+    "feature_names",
+    "feature_importances"
+)
 
 dim(feat_import_df)
 head(feat_import_df)
@@ -101,7 +107,7 @@ red_box_nuclei_radial <- other_feature_group_df %>%
 
 # Create a new data frame for the red box around the mito radial disbribution in the nuclei compartment
 red_box_mito_radial <- other_feature_group_df %>%
-    dplyr::filter(channel_cleaned == "Mito" & feature_group == "RadialDistribution" & compartment == "Nuclei")
+    dplyr::filter(channel_cleaned == "Actin" & feature_group == "RadialDistribution" & compartment == "Nuclei")
 
 width <- 12
 height <- 6
@@ -130,7 +136,7 @@ feature_importance_gg <- (
         name = "Top abs value\ncoefficient",
         palette = "YlGn",
         direction = 1,
-        limits = c(0, 4)
+        limits = c(0, 2.5)
     )
     + xlab("Channel")
     + ylab("Feature group")
