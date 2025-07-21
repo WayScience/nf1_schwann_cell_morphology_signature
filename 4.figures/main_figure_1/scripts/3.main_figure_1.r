@@ -51,13 +51,15 @@ genotype_montage <- ggplot() +
 genotype_montage
 
 fig_1_gg <- (
-  genotype_montage /
-  workflow
-) + plot_layout(heights = c(1, 1.15)) + 
-  plot_annotation(tag_levels = "A") & 
-  theme(plot.tag = element_text(size = 20))
+    (
+        free(genotype_montage, type = "label") / workflow
+    )
+    + plot_layout(heights = c(1, 0.85))
+    + plot_annotation(tag_levels = "A")
+    & theme(plot.tag = element_text(size = 22))
+)
 
 # Save or display the plot
-ggsave(output_main_figure_1, plot = fig_1_gg, dpi = 500, height = 10, width = 11)
+ggsave(output_main_figure_1, plot = fig_1_gg, dpi = 500, height = 8.2, width = 9.2)
 
 fig_1_gg
