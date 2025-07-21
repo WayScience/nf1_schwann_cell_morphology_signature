@@ -2,7 +2,6 @@ suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(patchwork))
-suppressPackageStartupMessages(library(RColorBrewer))
 
 figure_dir <- "../figures"
 output_main_figure_1 <- file.path(figure_dir, "main_figure_1_workflow.png")
@@ -59,6 +58,6 @@ fig_1_gg <- (
   theme(plot.tag = element_text(size = 20))
 
 # Save or display the plot
-ggsave(output_main_figure_1, plot = fig_1_gg, dpi = 500, height = 10, width = 10)
+ggsave(output_main_figure_1, plot = fig_1_gg, dpi = 500, height = 10, width = 11)
 
 fig_1_gg

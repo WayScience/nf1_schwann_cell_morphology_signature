@@ -3,6 +3,7 @@ suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(patchwork))
 suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(magick))
 
 load_image <- function(path){
     img <- png::readPNG(path)
@@ -195,3 +196,13 @@ ggsave(
     ),
     all_plot, width = width, height = height, dpi = 600
 )
+
+# Load the image
+montage_path <- "../figures/all_genotypes_montage.png"
+montage_img <- image_read(montage_path)
+
+# Crop to 9300x4288 starting at top-left corner (0,0)
+cropped_img <- image_crop(montage_img, "9300x4288+0+0")
+
+# Save the cropped image
+image_write(cropped_img, "../figures/all_genotypes_montage.png")
