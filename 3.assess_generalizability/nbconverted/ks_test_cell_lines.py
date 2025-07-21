@@ -83,7 +83,10 @@ for column in plate_6_norm.columns:
     ks_stat, p_value = stats.kstest(
         institution_1_norm[column], institution_2_norm[column]
     )
-    all_genotypes_ks_test_results_norm[column] = {"ks_stat": ks_stat, "p_value": p_value}
+    all_genotypes_ks_test_results_norm[column] = {
+        "ks_stat": ks_stat,
+        "p_value": p_value,
+    }
 
 # Convert results to DataFrame for better visualization
 all_genotypes_ks_test_results_norm_df = (
@@ -167,7 +170,12 @@ all_genotypes_ks_test_results_norm_df["genotype_comparison"] = "All"
 
 # Combine the two DataFrames
 ks_test_results_norm_df = pd.concat(
-    [WT_ks_test_results_norm_df, Null_ks_test_results_norm_df, all_genotypes_ks_test_results_norm_df], ignore_index=True
+    [
+        WT_ks_test_results_norm_df,
+        Null_ks_test_results_norm_df,
+        all_genotypes_ks_test_results_norm_df,
+    ],
+    ignore_index=True,
 )
 
 # Print the combined results

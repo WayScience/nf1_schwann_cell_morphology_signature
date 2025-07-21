@@ -218,6 +218,10 @@ kstest_results_df$channel <- ifelse(kstest_results_df$channel %in% c("DAPI", "CY
 # Update the channel names
 kstest_results_df$channel <- recode(kstest_results_df$channel, "DAPI" = "Nuclei", "GFP" = "ER", "CY5" = "Mito", "RFP" = "F-actin")
 
+# Arrange results by ks_stat in descending order
+kstest_results_df <- kstest_results_df %>%
+    arrange(desc(ks_stat))
+
 dim(kstest_results_df)
 head(kstest_results_df)
 

@@ -8,6 +8,8 @@ figure_dir <- "../figures"
 output_main_figure_3 <- file.path(
     figure_dir, "main_figure_3_model_eval.png"
 )
+
+# Results directory for original model evaluation
 results_dir <- file.path(
     "../../2.evaluate_model/model_evaluation_data/"
 )
@@ -75,7 +77,7 @@ pr_all_plates_plot <- (
 
 pr_all_plates_plot
 
-# Load data
+# Load data from original model evaluation
 metrics_results_file <- file.path(results_dir, "metrics_final_qc_model.parquet")
 
 metrics_results_df <- arrow::read_parquet(metrics_results_file)
@@ -145,7 +147,7 @@ accuracy_score_all_plates_plot <- (
 
 accuracy_score_all_plates_plot
 
-# Load data
+# Load data for original model evaluation
 CM_results_file <- file.path(results_dir, "confusion_matrix_final_qc_model.parquet")
 
 CM_results_df <- arrow::read_parquet(CM_results_file)
@@ -235,6 +237,7 @@ confusion_matrix_all_plates_plot <- (
 confusion_matrix_all_plates_plot
 
 
+# Directory for PR results from new (derivation) model
 results_dir <- file.path(
     "../../1.train_models/train_deriv_model/pr_results"
 )
@@ -303,7 +306,7 @@ filtered_plate_6_pr_df <- PR_results_df[PR_results_df$plate %in% c("Plate_6_orig
 filtered_plate_6_pr_df <- filtered_plate_6_pr_df %>%
     mutate(
         derivative_type = ifelse(plate == "Plate_6_orig", "original", "derivative"),
-        group_type = paste0(derivative_type, " (", datasplit, ")")
+        group_type = paste0(derivative_type, " (", datasplit, ")") # Add datasplit to group_type
         )
 
 width <- 12
@@ -342,6 +345,10 @@ pr_plate_6_deriv_plot <- (
 )
 
 pr_plate_6_deriv_plot
+
+filtered_plate_6_pr_df %>%
+    count(group_type)
+
 
 # Load the merged coefficients file
 merged_coefficients_file <- "../../1.train_models/train_deriv_model/coeff_results/merged_coefficients_original_new_model.csv"
@@ -421,6 +428,9 @@ scatterplot_models <- ggplot(merged_coefficients, aes(
     geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
     geom_abline(slope = 1, intercept = 0, linetype = "solid", color = "gray30") +
     geom_point(size = 4, alpha = 0.5) +
+    annotate("text", x = Inf, y = -Inf, 
+         label = paste0("Spearman: 0.7433"),
+         hjust = 1.1, vjust = -1.1, size = 6, color = "black", fontface = "bold") +
     theme_bw() +
     theme(
         text = element_text(size = 18),
