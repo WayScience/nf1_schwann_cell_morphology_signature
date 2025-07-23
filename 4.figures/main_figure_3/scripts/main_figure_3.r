@@ -394,6 +394,24 @@ merged_coefficients$organelle <- dplyr::recode(
 # Display the first few rows of the loaded data
 head(merged_coefficients)
 
+# Top 3 features in the original model
+top3_orig <- merged_coefficients %>%
+    arrange(desc(abs(coefficient_orig_model))) %>%
+    slice_head(n = 3) %>%
+    select(feature, coefficient_orig_model)
+
+cat("Top 3 features in the Original Model:\n")
+print(top3_orig)
+
+# Top 3 features in the new model
+top3_new <- merged_coefficients %>%
+    arrange(desc(abs(coefficient_new_model))) %>%
+    slice_head(n = 3) %>%
+    select(feature, coefficient_new_model)
+
+cat("\nTop 3 features in the New Model:\n")
+print(top3_new)
+
 # Get top 10 features by absolute value for each model
 top10_new <- merged_coefficients %>%
     arrange(desc(abs(coefficient_new_model))) %>%
