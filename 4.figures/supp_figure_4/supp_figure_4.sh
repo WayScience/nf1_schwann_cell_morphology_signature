@@ -9,4 +9,4 @@ conda activate nf1_figures
 jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
 
 # run notebooks to generate supplemental figure
-Rscript scripts/supp_figure_3.r
+Rscript scripts/supp_figure_4.r

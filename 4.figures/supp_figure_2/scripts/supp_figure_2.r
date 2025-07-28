@@ -1,214 +1,96 @@
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(grid))
+suppressPackageStartupMessages(library(platetools))
 suppressPackageStartupMessages(library(patchwork))
-suppressPackageStartupMessages(library(arrow))
 
 figure_dir <- "../figures/supplementary"
-output_supp_figure <- file.path(figure_dir, "supp_figure_3_splitbyplate.png")
+output_supp_figure <- file.path(figure_dir, "supp_figure_2_nf1_genotype_platemaps.png")
 
-# Path to UMAP results
-UMAP_results_dir <- file.path(
-    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/4.analyze_data/notebooks/UMAP/results/qc_profiles_results"
+# Path to platemaps
+platemap_dir <- file.path(
+    "/media/18tbdrive/1.Github_Repositories/nf1_schwann_cell_painting_data/0.download_data/metadata/"
 )
 
 # Load data
-UMAP_results_file <- file.path(UMAP_results_dir, "UMAP_concat_model_plates_sc_feature_selected_qc.tsv")
+plate_A_B_file <- file.path(platemap_dir, "platemap_NF1_plate3.csv")
 
-UMAP_results_df <- readr::read_tsv(UMAP_results_file)
+plate_A_B_df <- readr::read_csv(plate_A_B_file)
 
-UMAP_results_df <- UMAP_results_df %>%
+# Remove rows where genotype is "HET"
+plate_A_B_df <- plate_A_B_df %>%
+  filter(!grepl("HET", genotype)) %>%
   mutate(
-    Metadata_Plate = recode(Metadata_Plate,
-                            "Plate_3" = "Plate A",
-                            "Plate_3_prime" = "Plate B",
-                            "Plate_5" = "Plate C"),
     cell_line_code = case_when(
-      Metadata_genotype == "Null" ~ "Null C04",
-      Metadata_genotype == "WT" ~ "WT A3",
-      TRUE ~ NA_character_
+      genotype == "Null" ~ "Null C04",
+      genotype == "WT" ~ "WT A3",
+      TRUE ~ genotype
     )
   )
 
-dim(UMAP_results_df)
-head(UMAP_results_df)
+dim(plate_A_B_df)
+head(plate_A_B_df)
 
-width <- 8
-height <- 10
-options(repr.plot.width = width, repr.plot.height = height)
+platemap_A_B <-
+        platetools::raw_map(
+            data = as.numeric(plate_A_B_df$seed_density),
+            well = plate_A_B_df$well_position,
+            plate = 96,
+            size = 8
+        ) +
+        theme(plot.title = element_text(size = 10, face = "bold")) +
+        ggplot2::geom_point(aes(shape = plate_A_B_df$cell_line_code)) +
+        ggplot2::scale_shape_discrete(name = "NF1\ngenotype") +
+        ggplot2::scale_fill_gradient2(
+        name = "Seed Density",
+        low = "white",
+        high = "red",
+        ) 
 
-umap_fig_gg <- (
-  ggplot(UMAP_results_df, aes(x = UMAP0, y = UMAP1))
-  + geom_point(
-      aes(color = cell_line_code),
-      size = 0.2,
-      alpha = 0.4
-  )
-  + theme_bw()
-  + facet_grid(~Metadata_Plate)
-  + guides(
-      color = guide_legend(
-          override.aes = list(size = 2)
-      )
-  )
-  + labs(x = "UMAP0", y = "UMAP1", color = "NF1\ngenotype")
-  # change the text size
-  + theme(
-      strip.text = element_text(size = 18),
-      # x and y axis text size
-      axis.text.x = element_text(size = 18),
-      axis.text.y = element_text(size = 18),
-      # x and y axis title size
-      axis.title.x = element_text(size = 18),
-      axis.title.y = element_text(size = 18),
-      # legend text size
-      legend.text = element_text(size = 18),
-      legend.title = element_text(size = 18)
-  )
-)
-
-umap_fig_gg
-
-# Replace missing values in Metadata_genotype with "Null"
-UMAP_results_df$Metadata_genotype <- na_if(UMAP_results_df$Metadata_genotype, "")
-
-# Group by both Metadata_genotype and Metadata_Plate and summarize the count of rows per group
-per_plate_counts <- UMAP_results_df %>%
-    group_by(Metadata_genotype, Metadata_Plate, cell_line_code) %>%
-    summarize(count = n(), .groups = 'drop')
-
-# Confirm any NA values are "Null" strings in Metadata_genotype column
-per_plate_counts$Metadata_genotype[is.na(per_plate_counts$Metadata_genotype)] <- "Null"
-
-# View the resulting counts dataframe
-dim(per_plate_counts)
-per_plate_counts
-
-# Create the histogram plot with adjusted dodge width
-histogram_plot <- ggplot(per_plate_counts, aes(x = cell_line_code, y = count, fill = Metadata_genotype)) +
-    geom_bar(stat = "identity", position = position_dodge(width = 1.0)) +  # Adjust dodge width
-    geom_text(aes(label = count), position = position_dodge(width = 1.0), vjust = -0.5, size = 5) +  # Adjust dodge width
-    labs(x = "Genotype", y = "Single-cell count", fill = "NF1\ngenotype") + 
-    ylim(0, 8000) +  # Adjust y-axis limit if needed
-    theme_bw() +
-    facet_grid(~Metadata_Plate) +  # Facet by Metadata_Plate
-    theme(
-        # x and y axis text size
-        axis.text.x = element_text(size = 18, angle = 45, hjust =1),
-        axis.text.y = element_text(size = 18),
-        # axis title size
-        axis.title.x = element_text(size = 18),
-        axis.title.y = element_text(size = 18),
-         # Remove legend
-        legend.position = "none",
-        # Increase facet title size
-        strip.text = element_text(size = 18),
-        # Keep x-axis ticks
-        axis.ticks.x = element_line()
-    )
-
-histogram_plot
-
-
-# Path to correlation per plate results
-corr_results_dir <- file.path(
-    "../../0.data_analysis/plate_correlation_analyses/construct_correlation_data"
-)
+platemap_A_B
 
 # Load data
-corr_results_file <- file.path(corr_results_dir, "well_agg_plate_genotype_correlations_qc.parquet")
-corr_results_df <- arrow::read_parquet(corr_results_file)
+plate_C_file <- file.path(platemap_dir, "platemap_NF1_plate5.csv")
 
-# Rename plates in both group columns
-corr_results_df <- corr_results_df %>%
+plate_C_df <- readr::read_csv(plate_C_file)
+
+# Remove rows where genotype is "HET"
+plate_C_df <- plate_C_df %>%
+  filter(!grepl("HET", genotype)) %>%
   mutate(
-    Metadata_Plate__group0 = recode(Metadata_Plate__group0,
-                                    "Plate_3" = "Plate A",
-                                    "Plate_3_prime" = "Plate B",
-                                    "Plate_5" = "Plate C"),
-    Metadata_Plate__group1 = recode(Metadata_Plate__group1,
-                                    "Plate_3" = "Plate A",
-                                    "Plate_3_prime" = "Plate B",
-                                    "Plate_5" = "Plate C")
+    cell_line_code = case_when(
+      genotype == "Null" ~ "Null C04",
+      genotype == "WT" ~ "WT A3",
+      TRUE ~ genotype
+    )
   )
 
-# Filter rows where Metadata_Plate__group0 matches Metadata_Plate__group1
-filtered_df <- corr_results_df %>%
-    filter(Metadata_Plate__group0 == Metadata_Plate__group1)
+dim(plate_C_df)
+head(plate_C_df)
 
-# Add a new column `same_genotype` to check if the correlation row is comparing between the same genotype
-filtered_df$same_genotype <- filtered_df$Metadata_genotype__group0 == filtered_df$Metadata_genotype__group1
+platemap_C <-
+        platetools::raw_map(
+            data = plate_C_df$cell_line_code,
+            well = plate_C_df$well_position,
+            plate = 96,
+            size = 8
+        ) +
+        theme(plot.title = element_text(size = 10, face = "bold")) +
+        ggplot2::scale_fill_discrete(name = "NF1\ngenotype")  
 
-# Check dimensions and head of the filtered dataframe
-dim(filtered_df)
-head(filtered_df)
+platemap_C
 
-
-# Calculate mean correlations for each group
-mean_values <- filtered_df %>%
-  group_by(same_genotype) %>%
-  summarize(mean_correlation = mean(correlation))
-
-focus_corr_colors = c(
-    "TRUE" = "blue",
-    "FALSE" = "orange"
-)
-focus_corr_labels  = c(
-    "TRUE" = "Yes",
-    "FALSE" = "No"
-)
-
-# Create the plot
-genotype_corr_gg <- (
-  ggplot(filtered_df, aes(x = correlation, fill = same_genotype))
-  + stat_density(aes(y = after_stat(scaled)), geom = "density", alpha = 0.5, position = "identity")
-  + scale_fill_manual(
-      "Is the\npairwise\ncomparison\nfrom the\nsame genotype?",
-      values = focus_corr_colors,
-      labels = focus_corr_labels
-  )
-  + guides(
-      color = guide_legend(
-          override.aes = list(size = 2)
-      )
-  )
-  + facet_grid(~Metadata_Plate__group0)
-  + labs(x = "pairwise Pearson correlation", y = "Density")
-  + geom_vline(xintercept = 0, linetype = "dashed", color = "darkgrey")
-  + geom_vline(data = mean_values, aes(xintercept = mean_correlation, color = same_genotype), 
-               linetype = "dashed", linewidth = 1, show.legend = FALSE)
-  + scale_color_manual(values = focus_corr_colors)  # Use the same colors as the fill
-  + xlim(-1, 1.05)
-  + theme_bw()
-  + theme(
-      # x and y axis text size
-      axis.text.x = element_text(size = 18, angle = 45, margin = margin(t = 12)), # Move x-axis text down
-      axis.text.y = element_text(size = 18),
-      # x and y axis title size
-      axis.title.x = element_text(size = 18),
-      axis.title.y = element_text(size = 18),
-      # legend text size
-      legend.text = element_text(size = 18),
-      legend.title = element_text(size = 18),
-      # Increase facet title size
-      strip.text = element_text(size = 18),
-  )
-)
-
-genotype_corr_gg
-
-
-align_plot <-(histogram_plot / umap_fig_gg / genotype_corr_gg) + plot_layout(
-    heights=c(2, 2, 2)
-)
+align_plot <- (
+    platemap_A_B /
+    platemap_C 
+) + plot_layout(heights= c(2,2))
 
 align_plot
 
 supp_fig_gg <- (
   align_plot
-) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 25))
+) + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 20))
 
 # Save or display the plot
-ggsave(output_supp_figure, plot = supp_fig_gg, dpi = 500, height = 10, width = 9)
+ggsave(output_supp_figure, plot = supp_fig_gg, dpi = 500, height = 7.75, width = 7)
 
 supp_fig_gg
