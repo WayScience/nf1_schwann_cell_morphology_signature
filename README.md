@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15265464.svg)](https://doi.org/10.5281/zenodo.15265464)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16539373.svg)](https://doi.org/10.5281/zenodo.16539373)
 
 # NF1 Schwann cell morphology signature
 
@@ -8,7 +8,7 @@ The modified assay stains for four organelles: nuclei, endoplasmic reticulum, mi
 We applied CellProfiler pipelines to perform quality control, illumination correction, segmentation, and feature extraction.
 
 ![Figure 1](./4.figures/figures/main_figure_1_workflow.png)
-> *Overview of our Cell Painting and data analysis workflow.* 
+> *Overview of our Cell Painting and data analysis workflow.*
 > (A) Example image montages of the Cell Painting channels and composite image (all channels overlayed) for each NF1 genotype. 
 > The scale bar represents 25 μM. 
 > (B) Image analysis and data processing pipeline to derive morphology signature of NF1 genotype.
