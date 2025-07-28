@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16539373.svg)](https://doi.org/10.5281/zenodo.16539373)
+[![DOI](https://zenodo.org/badge/DOI/latest.svg)](https://doi.org/10.5281/zenodo.16539373)
 
 # NF1 Schwann cell morphology signature
 
